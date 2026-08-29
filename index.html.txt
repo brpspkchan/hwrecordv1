@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>作業提交與學生管理系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Data Grid Focus Styling */
+    .grid-row:focus-within {
+      background-color: #f0f9ff;
+    }
+    .grid-checkbox:focus {
+      ring: 2px;
+      ring-color: #2563eb;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 font-sans min-h-screen">
+
+  <section id="module-login" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 space-y-6">
+      
+      <div class="text-center space-y-2">
+        <div class="inline-flex p-3 bg-blue-100 rounded-2xl text-blue-600 mb-1">
+          <i data-lucide="check-square" class="w-8 h-8"></i>
+        </div>
+        <h2 class="text-2xl font-black text-slate-800 tracking-tight">作業提交與學務管理系統</h2>
+        <p class="text-xs text-slate-500">請輸入教職員帳號與密碼以登入系統</p>
+      </div>
+
+      <div id="login-error" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-bold flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+        <span>帳號或密碼不正確，請重新輸入。</span>
+      </div>
+
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">帳號 / 教職員編號</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+            <input type="text" id="login-username" required placeholder="請輸入帳號" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">密碼</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+            <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs">
+          <label class="flex items-center space-x-2 cursor-pointer text-slate-600">
+            <input type="checkbox" class="rounded text-blue-600 focus:ring-blue-500">
+            <span>記住我的登入資訊</span>
+          </label>
+          <a href="#" onclick="alert('請聯繫系統管理者重設密碼')" class="text-blue-600 font-bold hover:underline">忘記密碼？</a>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md border border-blue-700 transition flex items-center justify-center gap-2 active:scale-95">
+          <i data-lucide="log-in" class="w-4 h-4"></i> 登入系統
+        </button>
+      </form>
+
+      <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center text-xs text-slate-500">
+        🔑 系統預設帳號：<span class="font-mono font-bold text-slate-700">teahcer</span>｜預設密碼：<span class="font-mono font-bold text-slate-700">brps2026</span>
+      </div>
+    </div>
+  </section>
+
+  <div id="main-app" class="hidden min-h-screen flex flex-col bg-slate-50 text-slate-800">
+
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+          <i data-lucide="check-square" class="w-7 h-7 text-blue-400"></i>
+          <h1 class="text-xl font-bold tracking-wide">作業提交與學務管理系統</h1>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+          <nav class="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+            <button id="tab-grid-btn" onclick="switchTab('grid')" class="px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-2 bg-blue-600 text-white shadow">
+              <i data-lucide="grid" class="w-4 h-4"></i> 快速登記模組
+            </button>
+            <button id="tab-admin-btn" onclick="switchTab('admin')" class="px-4 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white transition flex items-center gap-2">
+              <i data-lucide="shield-check" class="w-4 h-4"></i> Admin 管理者後台
+            </button>
+          </nav>
+
+          <button onclick="handleLogout()" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg border border-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="log-out" class="w-4 h-4"></i> 登出
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+
+      <section id="module-grid" class="space-y-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="sliders" class="w-5 h-5 text-blue-600"></i> 作業登記條件設定
+            </h2>
+            <span class="text-xs font-semibold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-200">
+              ⚡ 快捷導航啟動中：使用 鍵盤 [↓] 換行、[Space] 切換狀態
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">日期</label>
+              <input type="date" id="grid-date" onchange="handleDateChange()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">班別</label>
+              <select class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none">
+                <option value="1A">1A 班</option>
+                <option value="1B">1B 班</option>
+                <option value="2A" selected>2A 班</option>
+                <option value="2B">2B 班</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">科目</label>
+              <select class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none">
+                <option selected>中文</option>
+                <option>英文</option>
+                <option>數學</option>
+                <option>常識</option>
+                <option>科學</option>
+                <option>人文</option>
+                <option>其他</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">作業名稱</label>
+              <input type="text" value="" placeholder="請輸入作業名稱" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-2">
+              <button onclick="setAllStatus(true)" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-bold flex items-center gap-1 transition">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i> 全選「已交」
+              </button>
+              <button onclick="setAllStatus(false)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg text-xs font-bold flex items-center gap-1 transition">
+                <i data-lucide="x-circle" class="w-4 h-4"></i> 全選「欠交」
+              </button>
+            </div>
+            <div class="text-sm font-medium text-slate-600">
+              全班共 <span id="total-count" class="font-bold text-slate-900">0</span> 人 | 已交：<span id="submitted-count" class="font-bold text-emerald-600">0</span> | 欠交：<span id="missing-count" class="font-bold text-rose-600">0</span>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-600 border-b border-slate-200 text-xs uppercase tracking-wider">
+                  <th class="py-3 px-4 w-32">學生編號</th>
+                  <th class="py-3 px-4 w-36">姓名</th>
+                  <th class="py-3 px-4 w-40 text-center">繳交狀態</th>
+                  <th class="py-3 px-4">備註 / 理由</th>
+                </tr>
+              </thead>
+              <tbody id="student-grid-body" class="divide-y divide-slate-100">
+                </tbody>
+            </table>
+          </div>
+
+          <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+            <button onclick="alert('已成功批量寫入資料庫！')" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow border border-blue-700 flex items-center gap-2 transition active:scale-95">
+              <i data-lucide="save" class="w-5 h-5"></i> 儲存登記 (批量寫入)
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="module-admin" class="hidden space-y-6">
+        <div class="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-900">
+          <div class="flex items-center gap-3">
+            <i data-lucide="shield-alert" class="w-6 h-6 text-amber-600"></i>
+            <div>
+              <h3 class="font-bold">管理者專區 (Admin Authorized)</h3>
+              <p class="text-xs text-amber-700">提供全校學生名單維護、學年批次升級與班別架構設定。</p>
+            </div>
+          </div>
+          <span class="text-xs bg-amber-200 text-amber-800 font-bold px-2.5 py-1 rounded">權限：系統管理員</span>
+        </div>
+
+        <div class="flex border-b border-slate-200 space-x-6">
+          <button id="admin-subtab-students" onclick="switchAdminTab('students')" class="pb-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 flex items-center gap-2">
+            <i data-lucide="users" class="w-4 h-4"></i> 學生資料管理 (Student Directory)
+          </button>
+          <button id="admin-subtab-classes" onclick="switchAdminTab('classes')" class="pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2">
+            <i data-lucide="graduation-cap" class="w-4 h-4"></i> 班別與學年管理 (Class & Year)
+          </button>
+        </div>
+
+        <div id="admin-panel-students" class="space-y-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3 flex-1 min-w-[280px]">
+              <div class="relative w-full max-w-xs">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                <input type="text" placeholder="搜尋班別、學生編號或姓名..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              </div>
+              <select class="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                <option value="">所有班別</option>
+                <option value="1A">1A</option>
+                <option value="2A">2A</option>
+              </select>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-lg border border-slate-300 flex items-center gap-2 transition">
+                <i data-lucide="file-up" class="w-4 h-4"></i> 批量匯入 (CSV/Excel)
+              </button>
+              <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-lg shadow flex items-center gap-2 transition">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> 新增學生
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table class="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-600 border-b border-slate-200 text-xs uppercase">
+                  <th class="py-3 px-4">學生編號</th>
+                  <th class="py-3 px-4">班別</th>
+                  <th class="py-3 px-4">中文姓名</th>
+                  <th class="py-3 px-4">英文姓名</th>
+                  <th class="py-3 px-4 text-center">狀態</th>
+                  <th class="py-3 px-4 text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-4 font-mono font-semibold text-slate-700">20240101</td>
+                  <td class="py-3 px-4 font-semibold">2A</td>
+                  <td class="py-3 px-4 font-medium">陳大文</td>
+                  <td class="py-3 px-4 text-slate-500">Chan Tai Man</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-800 rounded-full font-bold">在學</span></td>
+                  <td class="py-3 px-4 text-right space-x-2">
+                    <button class="text-blue-600 hover:underline text-xs font-bold">歷史紀錄</button>
+                    <button class="text-slate-600 hover:underline text-xs font-bold">編輯</button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-4 font-mono font-semibold text-slate-700">20240102</td>
+                  <td class="py-3 px-4 font-semibold">2A</td>
+                  <td class="py-3 px-4 font-medium">李小明</td>
+                  <td class="py-3 px-4 text-slate-500">Lee Siu Ming</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-800 rounded-full font-bold">在學</span></td>
+                  <td class="py-3 px-4 text-right space-x-2">
+                    <button class="text-blue-600 hover:underline text-xs font-bold">歷史紀錄</button>
+                    <button class="text-slate-600 hover:underline text-xs font-bold">編輯</button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-50 opacity-60">
+                  <td class="py-3 px-4 font-mono font-semibold text-slate-700">20230045</td>
+                  <td class="py-3 px-4 font-semibold">2A</td>
+                  <td class="py-3 px-4 font-medium">張偉強</td>
+                  <td class="py-3 px-4 text-slate-500">Cheung Wai Keung</td>
+                  <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 text-xs bg-slate-200 text-slate-600 rounded-full font-bold">已離校</span></td>
+                  <td class="py-3 px-4 text-right space-x-2">
+                    <button class="text-blue-600 hover:underline text-xs font-bold">歷史紀錄</button>
+                    <button class="text-slate-600 hover:underline text-xs font-bold">編輯</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="admin-panel-classes" class="hidden space-y-6">
+          <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl p-6 shadow-md flex flex-wrap justify-between items-center gap-4">
+            <div>
+              <h4 class="text-lg font-bold flex items-center gap-2">
+                <i data-lucide="arrow-up-circle" class="w-5 h-5 text-emerald-400"></i> 全校學年升級作業 (Promotion)
+              </h4>
+              <p class="text-xs text-slate-300 mt-1 max-w-xl">
+                執行一鍵升級將把全校學生批次變更至下一學年班別（例如 1A 升至 2A），同時會自動結算並歸檔舊學期的欠交紀錄。
+              </p>
+            </div>
+            <button onclick="confirm('確定要執行全校升級作業嗎？舊紀錄將被封存。')" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold rounded-lg shadow border border-emerald-400 flex items-center gap-2 transition active:scale-95">
+              <i data-lucide="sparkles" class="w-4 h-4"></i> 執行一鍵學年升級
+            </button>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3 border-slate-100">
+              <h3 class="font-bold text-slate-800">班別與班導師設置</h3>
+              <button class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-lg border border-blue-200 flex items-center gap-1">
+                <i data-lucide="plus" class="w-4 h-4"></i> 新增班別
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="p-4 border rounded-xl bg-slate-50 hover:bg-white hover:border-blue-400 transition">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-lg font-black text-slate-800">1A 班</span>
+                  <span class="text-xs text-slate-500">學生：30 人</span>
+                </div>
+                <p class="text-xs text-slate-600 mb-3">班導師：黃淑芬 老師</p>
+                <div class="flex justify-end space-x-2 text-xs">
+                  <button class="text-blue-600 font-bold hover:underline">編輯班別</button>
+                </div>
+              </div>
+
+              <div class="p-4 border rounded-xl bg-slate-50 hover:bg-white hover:border-blue-400 transition">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-lg font-black text-slate-800">2A 班</span>
+                  <span class="text-xs text-slate-500">學生：30 人</span>
+                </div>
+                <p class="text-xs text-slate-600 mb-3">班導師：張志明 老師</p>
+                <div class="flex justify-end space-x-2 text-xs">
+                  <button class="text-blue-600 font-bold hover:underline">編輯班別</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // Initialize icons
+    lucide.createIcons();
+
+    // Default Today's Date
+    document.getElementById('grid-date').valueAsDate = new Date();
+
+    // Login Handling with Credential Verification
+    function handleLogin(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('login-username').value.trim();
+      const passwordInput = document.getElementById('login-password').value;
+      const errorBanner = document.getElementById('login-error');
+
+      // 驗證帳號 teahcer 與密碼 brps2026
+      if (usernameInput === 'teahcer' && passwordInput === 'brps2026') {
+        errorBanner.classList.add('hidden');
+        document.getElementById('module-login').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        
+        // 清空輸入欄位
+        document.getElementById('login-username').value = '';
+        document.getElementById('login-password').value = '';
+      } else {
+        errorBanner.classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      document.getElementById('main-app').classList.add('hidden');
+      document.getElementById('module-login').classList.remove('hidden');
+      document.getElementById('login-error').classList.add('hidden');
+    }
+
+    // Mock Student Data
+    const students = [
+      { id: '20240101', name: '陳大文', status: true, note: '' },
+      { id: '20240102', name: '李小明', status: true, note: '' },
+      { id: '20240103', name: '張偉強', status: true, note: '' },
+      { id: '20240104', name: '林雅婷', status: true, note: '' },
+      { id: '20240105', name: '黃家豪', status: true, note: '' },
+      { id: '20240106', name: '趙麗婷', status: true, note: '' },
+    ];
+
+    // 日期變更處理函數：重置並更新學生狀態
+    function handleDateChange() {
+      students.forEach(s => {
+        s.status = true; // 變更日期後重置為全體「已交」
+        s.note = '';     // 清空備註欄位
+      });
+      renderGrid();
+    }
+
+    // Render Student Grid
+    function renderGrid() {
+      const tbody = document.getElementById('student-grid-body');
+      tbody.innerHTML = '';
+
+      students.forEach((s, index) => {
+        const tr = document.createElement('tr');
+        tr.className = "grid-row hover:bg-blue-50/50 transition border-b border-slate-100";
+        tr.setAttribute('tabindex', '0');
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-4 font-mono font-bold text-slate-600">${s.id}</td>
+          <td class="py-2.5 px-4 font-bold text-slate-800">${s.name}</td>
+          <td class="py-2.5 px-4 text-center">
+            <button type="button" onclick="toggleStatus(${index})" 
+              class="w-24 py-1 rounded-full text-xs font-black transition border ${
+                s.status 
+                  ? 'bg-emerald-100 border-emerald-300 text-emerald-800 hover:bg-emerald-200' 
+                  : 'bg-rose-100 border-rose-300 text-rose-800 hover:bg-rose-200'
+              }">
+              ${s.status ? '✓ 已交' : '✕ 欠交'}
+            </button>
+          </td>
+          <td class="py-2.5 px-4">
+            <input type="text" value="${s.note}" placeholder="填寫欠交原因..." 
+              onchange="students[${index}].note = this.value"
+              class="w-full bg-transparent hover:bg-white focus:bg-white border border-transparent focus:border-slate-300 rounded px-2 py-1 text-xs focus:outline-none transition">
+          </td>
+        `;
+
+        // Keyboard navigation (Space to toggle, Arrow Down to move)
+        tr.addEventListener('keydown', (e) => {
+          if (e.code === 'Space') {
+            e.preventDefault();
+            toggleStatus(index);
+          } else if (e.code === 'ArrowDown') {
+            e.preventDefault();
+            const next = tr.nextElementSibling;
+            if (next) next.focus();
+          } else if (e.code === 'ArrowUp') {
+            e.preventDefault();
+            const prev = tr.previousElementSibling;
+            if (prev) prev.focus();
+          }
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      updateCounters();
+    }
+
+    function toggleStatus(index) {
+      students[index].status = !students[index].status;
+      renderGrid();
+    }
+
+    function setAllStatus(status) {
+      students.forEach(s => s.status = status);
+      renderGrid();
+    }
+
+    function updateCounters() {
+      const submitted = students.filter(s => s.status).length;
+      document.getElementById('total-count').innerText = students.length;
+      document.getElementById('submitted-count').innerText = submitted;
+      document.getElementById('missing-count').innerText = students.length - submitted;
+    }
+
+    // Tab Switching Logic
+    function switchTab(tab) {
+      const gridMod = document.getElementById('module-grid');
+      const adminMod = document.getElementById('module-admin');
+      const gridBtn = document.getElementById('tab-grid-btn');
+      const adminBtn = document.getElementById('tab-admin-btn');
+
+      if (tab === 'grid') {
+        gridMod.classList.remove('hidden');
+        adminMod.classList.add('hidden');
+        gridBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-2 bg-blue-600 text-white shadow";
+        adminBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white transition flex items-center gap-2";
+      } else {
+        gridMod.classList.add('hidden');
+        adminMod.classList.remove('hidden');
+        adminBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-2 bg-blue-600 text-white shadow";
+        gridBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white transition flex items-center gap-2";
+      }
+    }
+
+    function switchAdminTab(sub) {
+      const pStudents = document.getElementById('admin-panel-students');
+      const pClasses = document.getElementById('admin-panel-classes');
+      const btnStudents = document.getElementById('admin-subtab-students');
+      const btnClasses = document.getElementById('admin-subtab-classes');
+
+      if (sub === 'students') {
+        pStudents.classList.remove('hidden');
+        pClasses.classList.add('hidden');
+        btnStudents.className = "pb-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 flex items-center gap-2";
+        btnClasses.className = "pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2";
+      } else {
+        pStudents.classList.add('hidden');
+        pClasses.classList.remove('hidden');
+        btnClasses.className = "pb-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 flex items-center gap-2";
+        btnStudents.className = "pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2";
+      }
+    }
+
+    // Init Page
+    renderGrid();
+  </script>
+</body>
+</html>
