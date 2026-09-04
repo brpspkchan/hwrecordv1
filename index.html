@@ -1,1347 +1,1292 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>學生功課欠交登記與管理系統</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- SheetJS for Excel Export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
-  <!-- React & ReactDOM -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  
-  <!-- Babel for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 3px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校園功課與出席管理系統</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS for Excel Import/Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .grid-input:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: -2px;
+        }
+        .row-selected {
+            background-color: #eff6ff;
+        }
+        .disabled-cell {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
-  <div id="root"></div>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex flex-col">
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef, useMemo } = React;
-
-    // --- 硬編碼預設 GAS 部署網址 ---
-    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxcFkr74hwj7UZj7Z0NH5AqGsqMf5e9xlA5gDRIgsZCHFd_yf6s6lHdOGR41dtm8sJq/exec';
-
-    // ---預設初始資料---
-    const SUBJECTS = ["中文", "英文", "數學", "科學", "人文", "常識", "其他"];
-
-    const INITIAL_CLASSES = [
-      { id: "1A", name: "1A", teacher: "張老師" },
-      { id: "1B", name: "1B", teacher: "陳老師" },
-      { id: "2A", name: "2A", teacher: "李老師" },
-      { id: "2B", name: "2B", teacher: "黃老師" },
-    ];
-
-    const INITIAL_STUDENTS = [
-      { id: "s101", classId: "1A", seatNum: 1, nameZh: "陳大文", nameEn: "Chan Tai Man", status: "active" },
-      { id: "s102", classId: "1A", seatNum: 2, nameZh: "李小玲", nameEn: "Lee Siu Ling", status: "active" },
-      { id: "s103", classId: "1A", seatNum: 3, nameZh: "黃志強", nameEn: "Wong Chi Keung", status: "active" },
-      { id: "s104", classId: "1A", seatNum: 4, nameZh: "張美麗", nameEn: "Cheung Mei Lai", status: "active" },
-      { id: "s105", classId: "1A", seatNum: 5, nameZh: "林家豪", nameEn: "Lam Ka Ho", status: "active" },
-      { id: "s201", classId: "1B", seatNum: 1, nameZh: "何子明", nameEn: "Ho Tsz Ming", status: "active" },
-      { id: "s202", classId: "1B", seatNum: 2, nameZh: "鄭欣宜", nameEn: "Cheng Yan Yi", status: "active" },
-    ];
-
-    // 格式化日期 YYYY-MM-DD
-    const getTodayStr = () => new Date().toISOString().split('T')[0];
-
-    // 主應用組件
-    function App() {
-      // 全局 Page 狀態: 'register' | 'summary' | 'admin'
-      const [currentTab, setCurrentTab] = useState('register');
-
-      // 本地存儲數據狀態
-      const [classes, setClasses] = useState(() => {
-        const saved = localStorage.getItem('hw_classes');
-        return saved ? JSON.parse(saved) : INITIAL_CLASSES;
-      });
-
-      const [students, setStudents] = useState(() => {
-        const saved = localStorage.getItem('hw_students');
-        return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
-      });
-
-      // 欠交紀錄結構: Array of { id, date, classId, subject, hwName, studentId, isMissing }
-      const [records, setRecords] = useState(() => {
-        const saved = localStorage.getItem('hw_records');
-        return saved ? JSON.parse(saved) : [];
-      });
-
-      // Google Sheet 網絡腳本網址 (預設帶入 DEFAULT_GAS_URL)
-      const [sheetUrl, setSheetUrl] = useState(() => {
-        return localStorage.getItem('hw_gsheet_url') || DEFAULT_GAS_URL;
-      });
-
-      // 全局 Toast 提示訊息
-      const [toast, setToast] = useState(null);
-
-      const showToast = (message, type = 'success') => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 3000);
-      };
-
-      // 自動同步到 LocalStorage
-      useEffect(() => {
-        localStorage.setItem('hw_classes', JSON.stringify(classes));
-      }, [classes]);
-
-      useEffect(() => {
-        localStorage.setItem('hw_students', JSON.stringify(students));
-      }, [students]);
-
-      useEffect(() => {
-        localStorage.setItem('hw_records', JSON.stringify(records));
-      }, [records]);
-
-      useEffect(() => {
-        localStorage.setItem('hw_gsheet_url', sheetUrl);
-      }, [sheetUrl]);
-
-      // 圖標渲染輔助
-      useEffect(() => {
-        if (window.lucide) {
-          window.lucide.createIcons();
-        }
-      });
-
-      return (
-        <div class="flex flex-col min-h-screen">
-          {/* 頁頭 Nav */}
-          <header class="bg-indigo-700 text-white shadow-md">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-              <div class="flex items-center space-x-3">
-                <i data-lucide="clipboard-check" class="w-8 h-8 text-indigo-200"></i>
-                <span class="font-bold text-xl tracking-tight">學生功課欠交登記系統</span>
-              </div>
-              <nav class="flex space-x-1 sm:space-x-2">
-                <button
-                  onClick={() => setCurrentTab('register')}
-                  class={`px-3 py-2 rounded-lg font-medium text-sm transition flex items-center space-x-1.5 ${
-                    currentTab === 'register' ? 'bg-indigo-900 text-white shadow' : 'text-indigo-100 hover:bg-indigo-600'
-                  }`}
-                >
-                  <i data-lucide="edit-3" class="w-4 h-4"></i>
-                  <span>快速登記 (Data Grid)</span>
-                </button>
-
-                <button
-                  onClick={() => setCurrentTab('summary')}
-                  class={`px-3 py-2 rounded-lg font-medium text-sm transition flex items-center space-x-1.5 ${
-                    currentTab === 'summary' ? 'bg-indigo-900 text-white shadow' : 'text-indigo-100 hover:bg-indigo-600'
-                  }`}
-                >
-                  <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
-                  <span>欠交總覽與報表</span>
-                </button>
-
-                <button
-                  onClick={() => setCurrentTab('admin')}
-                  class={`px-3 py-2 rounded-lg font-medium text-sm transition flex items-center space-x-1.5 ${
-                    currentTab === 'admin' ? 'bg-indigo-900 text-white shadow' : 'text-indigo-100 hover:bg-indigo-600'
-                  }`}
-                >
-                  <i data-lucide="settings" class="w-4 h-4"></i>
-                  <span>Admin 管理與雲端同步</span>
-                </button>
-              </nav>
+    <!-- 頂部導覽列 -->
+    <header class="bg-indigo-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-graduation-cap text-2xl text-amber-400"></i>
+                <h1 class="text-xl font-bold tracking-wide">智慧校園功課與出席管理系統</h1>
             </div>
-          </header>
-
-          {/* 主要內容區 */}
-          <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-            {currentTab === 'register' && (
-              <RegisterModule 
-                classes={classes} 
-                students={students} 
-                records={records} 
-                setRecords={setRecords}
-                sheetUrl={sheetUrl}
-                showToast={showToast} 
-              />
-            )}
-
-            {currentTab === 'summary' && (
-              <SummaryModule 
-                classes={classes} 
-                students={students} 
-                records={records} 
-              />
-            )}
-
-            {currentTab === 'admin' && (
-              <AdminModule 
-                classes={classes} 
-                setClasses={setClasses} 
-                students={students} 
-                setStudents={setStudents}
-                records={records}
-                setRecords={setRecords}
-                sheetUrl={sheetUrl}
-                setSheetUrl={setSheetUrl}
-                showToast={showToast} 
-              />
-            )}
-          </main>
-
-          {/* Toast 通知浮窗 */}
-          {toast && (
-            <div class="fixed bottom-6 right-6 z-50 flex items-center bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl space-x-3 border border-slate-700 animate-bounce">
-              <i data-lucide={toast.type === 'success' ? 'check-circle-2' : 'alert-circle'} class={`w-5 h-5 ${toast.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}></i>
-              <span class="text-sm font-medium">{toast.message}</span>
+            
+            <!-- 角色與權限切換 (模擬) -->
+            <div class="flex items-center space-x-4 bg-indigo-950 px-3 py-1.5 rounded-lg border border-indigo-700">
+                <div id="syncStatusBadge" class="flex items-center space-x-1.5 text-xs bg-emerald-950/80 text-emerald-400 border border-emerald-800 px-2.5 py-1 rounded-full font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
+                    <span id="syncStatusText">實時連線中</span>
+                </div>
+                <div class="h-4 w-px bg-indigo-700"></div>
+                <span class="text-xs text-indigo-300">目前權限模擬：</span>
+                <select id="roleSelector" onchange="changeRole(this.value)" class="bg-indigo-900 text-white text-sm font-medium rounded border border-indigo-600 px-2 py-1 focus:outline-none">
+                    <option value="Teacher">任課教師 (Teacher)</option>
+                    <option value="FormTeacher">班導師 (Form Teacher - 1A)</option>
+                    <option value="Admin" selected>系統管理者 (Admin)</option>
+                </select>
+                <div class="h-4 w-px bg-indigo-700"></div>
+                <span id="userInfo" class="text-xs font-semibold text-amber-300">系統管理員 (全校權限)</span>
             </div>
-          )}
         </div>
-      );
-    }
+    </header>
 
-    // =========================================================
-    // 模組 1: 快速登記 (Data Grid)
-    // =========================================================
-    function RegisterModule({ classes, students, records, setRecords, sheetUrl, showToast }) {
-      const [date, setDate] = useState(getTodayStr());
-      const [selectedClass, setSelectedClass] = useState(classes[0]?.id || "");
-      const [subject, setSubject] = useState(SUBJECTS[0]);
-      const [hwName, setHwName] = useState("");
-      const [isSyncing, setIsSyncing] = useState(false);
-
-      const [focusedRowIndex, setFocusedRowIndex] = useState(0);
-      const [missingMap, setMissingMap] = useState({});
-
-      const currentClassStudents = useMemo(() => {
-        return students
-          .filter(s => s.classId === selectedClass && s.status === 'active')
-          .sort((a, b) => a.seatNum - b.seatNum);
-      }, [students, selectedClass]);
-
-      useEffect(() => {
-        const existingRecords = records.filter(
-          r => r.date === date && r.classId === selectedClass && r.subject === subject
-        );
-
-        const newMap = {};
-        currentClassStudents.forEach(s => {
-          newMap[s.id] = false;
-        });
-
-        if (existingRecords.length > 0) {
-          setHwName(existingRecords[0].hwName || "");
-          existingRecords.forEach(r => {
-            newMap[r.studentId] = r.isMissing;
-          });
-        } else {
-          setHwName("");
-        }
-
-        setMissingMap(newMap);
-        setFocusedRowIndex(0);
-      }, [date, selectedClass, subject, currentClassStudents, records]);
-
-      const toggleMissing = (studentId) => {
-        setMissingMap(prev => ({
-          ...prev,
-          [studentId]: !prev[studentId]
-        }));
-      };
-
-      const handleSelectAllSubmitted = () => {
-        const newMap = {};
-        currentClassStudents.forEach(s => {
-          newMap[s.id] = false;
-        });
-        setMissingMap(newMap);
-      };
-
-      useEffect(() => {
-        const handleKeyDown = (e) => {
-          if (document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'text') {
-            return;
-          }
-
-          if (e.code === 'Space') {
-            e.preventDefault();
-            if (currentClassStudents[focusedRowIndex]) {
-              toggleMissing(currentClassStudents[focusedRowIndex].id);
-            }
-          } else if (e.code === 'ArrowDown') {
-            e.preventDefault();
-            setFocusedRowIndex(prev => Math.min(prev + 1, currentClassStudents.length - 1));
-          } else if (e.code === 'ArrowUp') {
-            e.preventDefault();
-            setFocusedRowIndex(prev => Math.max(prev - 1, 0));
-          }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-      }, [focusedRowIndex, currentClassStudents]);
-
-      const handleSave = async () => {
-        const filteredRecords = records.filter(
-          r => !(r.date === date && r.classId === selectedClass && r.subject === subject)
-        );
-
-        const newEntries = currentClassStudents.map(s => ({
-          id: `${date}_${selectedClass}_${subject}_${s.id}`,
-          date,
-          classId: selectedClass,
-          subject,
-          hwName: hwName.trim(),
-          studentId: s.id,
-          isMissing: !!missingMap[s.id]
-        }));
-
-        const updatedRecords = [...filteredRecords, ...newEntries];
-        setRecords(updatedRecords);
-
-        if (sheetUrl) {
-          setIsSyncing(true);
-          const missingEntries = newEntries
-            .filter(r => r.isMissing)
-            .map(r => {
-              const student = students.find(s => s.id === r.studentId);
-              return {
-                studentName: student ? `${student.nameZh} (${selectedClass})` : "未知學生",
-                date: r.date,
-                className: selectedClass,
-                subject: r.subject,
-                hwName: r.hwName || ''
-              };
-            });
-
-          try {
-            await fetch(sheetUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'append', records: missingEntries })
-            });
-            showToast(`已儲存並成功即時同步 ${missingEntries.length} 筆欠交紀錄至 Google Sheet！`);
-          } catch (err) {
-            console.error(err);
-            showToast(`本地已儲存，但 Google Sheet 同步失敗。`, 'error');
-          } finally {
-            setIsSyncing(false);
-          }
-        } else {
-          showToast(`已成功儲存！`);
-        }
-      };
-
-      const missingCount = Object.values(missingMap).filter(Boolean).length;
-
-      return (
-        <div class="space-y-6">
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-            <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center space-x-2">
-              <i data-lucide="sliders" class="w-5 h-5 text-indigo-600"></i>
-              <span>登記參數設定</span>
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">日期</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition"
-                />
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">班別</label>
-                <select
-                  value={selectedClass}
-                  onChange={(e) => setSelectedClass(e.target.value)}
-                  class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition"
-                >
-                  {classes.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} 班 (班主任: {c.teacher || '未設定'})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">科目</label>
-                <select
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition"
-                >
-                  {SUBJECTS.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                  作業名稱 <span class="text-slate-400 font-normal">(可空白)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="例如：單元三工作紙"
-                  value={hwName}
-                  onChange={(e) => setHwName(e.target.value)}
-                  class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-            <div class="flex items-center space-x-2 text-xs text-indigo-800">
-              <i data-lucide="keyboard" class="w-4 h-4 text-indigo-600"></i>
-              <span>快捷鍵小貼士：按 <kbd class="px-1.5 py-0.5 bg-white border border-indigo-200 rounded font-mono shadow-sm">Space</kbd> 切換欠交狀態，按 <kbd class="px-1.5 py-0.5 bg-white border border-indigo-200 rounded font-mono shadow-sm">↓</kbd> <kbd class="px-1.5 py-0.5 bg-white border border-indigo-200 rounded font-mono shadow-sm">↑</kbd> 鍵移動學生。</span>
-            </div>
-            <div class="flex items-center space-x-4">
-              <span class="text-xs font-semibold text-slate-600">
-                欠交人數：<strong class="text-rose-600 text-sm font-bold">{missingCount}</strong> / {currentClassStudents.length} 人
-              </span>
-              <button
-                onClick={handleSelectAllSubmitted}
-                class="text-xs font-medium text-indigo-700 hover:text-indigo-900 hover:underline"
-              >
-                重置全班為已交
-              </button>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="overflow-x-auto max-h-[500px] custom-scrollbar">
-              <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-100 sticky top-0 z-10 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
-                  <tr>
-                    <th class="py-3 px-4 w-16 text-center">座號</th>
-                    <th class="py-3 px-4">中文姓名</th>
-                    <th class="py-3 px-4">英文姓名</th>
-                    <th class="py-3 px-4 w-40 text-center">狀態 (點擊切換)</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                  {currentClassStudents.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" class="py-8 text-center text-slate-400">該班別暫無學生資料，請先至 Admin 管理頁面新增學生。</td>
-                    </tr>
-                  ) : (
-                    currentClassStudents.map((s, idx) => {
-                      const isMissing = !!missingMap[s.id];
-                      const isFocused = focusedRowIndex === idx;
-
-                      return (
-                        <tr
-                          key={s.id}
-                          onClick={() => setFocusedRowIndex(idx)}
-                          class={`transition cursor-pointer ${
-                            isFocused ? 'bg-indigo-50/70 ring-1 ring-inset ring-indigo-300' : 'hover:bg-slate-50'
-                          }`}
-                        >
-                          <td class="py-3 px-4 text-center font-medium text-slate-500">{s.seatNum}</td>
-                          <td class="py-3 px-4 font-semibold text-slate-800">{s.nameZh}</td>
-                          <td class="py-3 px-4 text-slate-500 font-mono text-xs">{s.nameEn}</td>
-                          <td class="py-3 px-4 text-center">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleMissing(s.id);
-                              }}
-                              class={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${
-                                isMissing
-                                  ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-200'
-                                  : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800'
-                              }`}
-                            >
-                              {isMissing ? '欠交' : '已交'}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-              <div class="text-xs text-slate-500 flex items-center space-x-1.5">
-                <span class={`w-2 h-2 rounded-full ${sheetUrl ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
-                <span>{sheetUrl ? '已連線至 Google Sheet (即時同步中)' : '尚未綁定 Google Sheet 網址'}</span>
-              </div>
-              <button
-                onClick={handleSave}
-                disabled={isSyncing}
-                class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white font-bold rounded-xl shadow-lg hover:shadow-indigo-200 transition flex items-center space-x-2"
-              >
-                <i data-lucide={isSyncing ? "refresh-cw" : "save"} class={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`}></i>
-                <span>{isSyncing ? '同步中...' : '儲存並同步至 Google Sheet'}</span>
-              </button>
-            </div>
-          </div>
+    <!-- 主選單導覽 Tab -->
+    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 flex space-x-1">
+            <button onclick="switchTab('register')" id="tab-register" class="tab-btn px-5 py-3 font-medium text-sm border-b-2 border-indigo-600 text-indigo-600 flex items-center space-x-2">
+                <i class="fa-solid fa-table-cells"></i>
+                <span>快速功課登記 (Data Grid)</span>
+            </button>
+            <button onclick="switchTab('reports')" id="tab-reports" class="tab-btn px-5 py-3 font-medium text-sm text-slate-600 hover:text-indigo-600 border-b-2 border-transparent flex items-center space-x-2">
+                <i class="fa-solid fa-chart-column"></i>
+                <span>欠交與出席統計</span>
+            </button>
+            <button onclick="switchTab('admin')" id="tab-admin" class="tab-btn px-5 py-3 font-medium text-sm text-slate-600 hover:text-indigo-600 border-b-2 border-transparent flex items-center space-x-2">
+                <i class="fa-solid fa-user-gear"></i>
+                <span>Admin 管理者後台</span>
+            </button>
         </div>
-      );
-    }
+    </nav>
 
-    // =========================================================
-    // 模組 2: 欠交總覽與報表
-    // =========================================================
-    function SummaryModule({ classes, students, records }) {
-      const [filterClass, setFilterClass] = useState("ALL");
-      const [filterSubject, setFilterSubject] = useState("ALL");
-      const [searchQuery, setSearchQuery] = useState("");
+    <!-- 主要內容區 -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
 
-      const summaryList = useMemo(() => {
-        return students.map(student => {
-          const studentMissingRecords = records.filter(
-            r => r.studentId === student.id && r.isMissing
-          );
-
-          const filteredRecords = studentMissingRecords.filter(r => {
-            if (filterSubject !== "ALL" && r.subject !== filterSubject) return false;
-            return true;
-          });
-
-          const subjectBreakdown = {};
-          filteredRecords.forEach(r => {
-            subjectBreakdown[r.subject] = (subjectBreakdown[r.subject] || 0) + 1;
-          });
-
-          const totalItemsCount = filteredRecords.length;
-          const uniqueDays = new Set(filteredRecords.map(r => r.date)).size;
-          const studentClass = classes.find(c => c.id === student.classId);
-
-          return {
-            ...student,
-            className: studentClass ? studentClass.name : student.classId,
-            classTeacher: studentClass ? studentClass.teacher : '未設定',
-            subjectBreakdown,
-            totalItemsCount,
-            uniqueDays,
-            missingHistory: filteredRecords
-          };
-        }).filter(item => {
-          if (filterClass !== "ALL" && item.classId !== filterClass) return false;
-          if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            return (
-              item.nameZh.toLowerCase().includes(query) ||
-              item.nameEn.toLowerCase().includes(query) ||
-              item.className.toLowerCase().includes(query)
-            );
-          }
-          return true;
-        });
-      }, [students, records, classes, filterClass, filterSubject, searchQuery]);
-
-      const handleExportExcel = () => {
-        const overviewData = summaryList.map(s => ({
-          "班別": s.className,
-          "班主任": s.classTeacher,
-          "座號": s.seatNum,
-          "中文姓名": s.nameZh,
-          "英文姓名": s.nameEn,
-          "歷史累計欠交天數 (每天僅計一次)": s.uniqueDays,
-          "欠交總項數": s.totalItemsCount,
-          "各科細項": Object.entries(s.subjectBreakdown).map(([sub, count]) => `${sub}:${count}次`).join('; ')
-        }));
-
-        const detailData = [];
-        summaryList.forEach(s => {
-          s.missingHistory.forEach(r => {
-            detailData.push({
-              "日期": r.date,
-              "班別": s.className,
-              "座號": s.seatNum,
-              "學生姓名": s.nameZh,
-              "科目": r.subject,
-              "作業名稱": r.hwName || '(無名稱)'
-            });
-          });
-        });
-
-        const wb = XLSX.utils.book_new();
-        const wsOverview = XLSX.utils.json_to_sheet(overviewData);
-        const wsDetail = XLSX.utils.json_to_sheet(detailData);
-
-        XLSX.utils.book_append_sheet(wb, wsOverview, "欠交累計總覽");
-        XLSX.utils.book_append_sheet(wb, wsDetail, "詳細紀錄明細");
-
-        XLSX.writeFile(wb, `全校學生功課欠交統計報表_${getTodayStr()}.xlsx`);
-      };
-
-      return (
-        <div class="space-y-6">
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto">
-              <div>
-                <select
-                  value={filterClass}
-                  onChange={(e) => setFilterClass(e.target.value)}
-                  class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                >
-                  <option value="ALL">所有班別</option>
-                  {classes.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} 班</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <select
-                  value={filterSubject}
-                  onChange={(e) => setFilterSubject(e.target.value)}
-                  class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                >
-                  <option value="ALL">所有科目</option>
-                  {SUBJECTS.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <input
-                  type="text"
-                  placeholder="搜尋姓名/班別..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
+        <!-- 1. 快速登記模組 (Data Grid) -->
+        <section id="view-register" class="space-y-4">
+            <!-- 頁面標頭與指示 -->
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex flex-wrap justify-between items-center gap-2">
+                <div class="flex items-center space-x-2 text-indigo-900">
+                    <i class="fa-solid fa-keyboard text-lg"></i>
+                    <span class="font-medium text-sm">鍵盤快捷鍵：<kbd class="bg-white border border-indigo-200 rounded px-1.5 py-0.5 text-xs font-mono">Space</kbd> 切換欠交狀態 ｜ <kbd class="bg-white border border-indigo-200 rounded px-1.5 py-0.5 text-xs font-mono">↓</kbd> <kbd class="bg-white border border-indigo-200 rounded px-1.5 py-0.5 text-xs font-mono">↑</kbd> 上下移動學生列 ｜ <kbd class="bg-white border border-indigo-200 rounded px-1.5 py-0.5 text-xs font-mono">Ctrl+S</kbd> 儲存登記</span>
+                </div>
+                <span class="text-xs text-indigo-600 font-semibold bg-indigo-100 px-2 py-1 rounded">提示：若學生非「出席」狀態，系統將自動鎖定且不計入欠交統計</span>
             </div>
 
-            <button
-              onClick={handleExportExcel}
-              class="w-full md:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition flex items-center justify-center space-x-2 shrink-0"
-            >
-              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-              <span>一鍵匯出 Excel 報表</span>
-            </button>
-          </div>
-
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-100 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
-                  <tr>
-                    <th class="py-3 px-4">班別</th>
-                    <th class="py-3 px-4">座號</th>
-                    <th class="py-3 px-4">學生姓名</th>
-                    <th class="py-3 px-4 text-center">
-                      <div class="flex items-center justify-center space-x-1">
-                        <span>歷史累計欠交天數</span>
-                        <span title="當天無論欠交多少科功課，均記錄為 1 次/天" class="cursor-help text-indigo-500">
-                          <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
-                        </span>
-                      </div>
-                    </th>
-                    <th class="py-3 px-4 text-center">總欠交項數</th>
-                    <th class="py-3 px-4">各科欠交細項</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                  {summaryList.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" class="py-8 text-center text-slate-400">沒有找到符合條件的學生資料。</td>
-                    </tr>
-                  ) : (
-                    summaryList.map(s => (
-                      <tr key={s.id} class="hover:bg-slate-50 transition">
-                        <td class="py-3 px-4 font-semibold text-slate-700">{s.className}</td>
-                        <td class="py-3 px-4 text-slate-500 font-mono">{s.seatNum}</td>
-                        <td class="py-3 px-4">
-                          <div class="font-bold text-slate-800">{s.nameZh}</div>
-                          <div class="text-xs text-slate-400 font-mono">{s.nameEn}</div>
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          <span class={`inline-block px-3 py-1 rounded-full font-bold text-xs ${
-                            s.uniqueDays > 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'
-                          }`}>
-                            {s.uniqueDays} 天
-                          </span>
-                        </td>
-                        <td class="py-3 px-4 text-center font-semibold text-slate-700">
-                          {s.totalItemsCount} 項
-                        </td>
-                        <td class="py-3 px-4">
-                          {Object.keys(s.subjectBreakdown).length === 0 ? (
-                            <span class="text-xs text-emerald-600 font-medium">良好 (無紀錄)</span>
-                          ) : (
-                            <div class="flex flex-wrap gap-1.5">
-                              {Object.entries(s.subjectBreakdown).map(([sub, count]) => (
-                                <span key={sub} class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs border border-slate-200">
-                                  {sub}: <strong class="text-rose-600">{count}</strong>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // =========================================================
-    // 模組 3: Admin 管理者後台
-    // =========================================================
-    function AdminModule({ classes, setClasses, students, setStudents, records, setRecords, sheetUrl, setSheetUrl, showToast }) {
-      const [adminTab, setAdminTab] = useState("gsheet");
-      
-      const [newClassName, setNewClassName] = useState("");
-      const [newClassTeacher, setNewClassTeacher] = useState("");
-
-      const [studentClassId, setStudentClassId] = useState(classes[0]?.id || "");
-      const [studentNameZh, setStudentNameZh] = useState("");
-      const [studentNameEn, setStudentNameEn] = useState("");
-
-      const [csvPreviewData, setCsvPreviewData] = useState(null);
-      const [isFullSyncing, setIsFullSyncing] = useState(false);
-
-      const handleDownloadTemplate = () => {
-        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + "班別,中文姓名,英文姓名\n1A,陳大文,Chan Tai Man\n1A,李小玲,Lee Siu Ling\n1B,張三,Zhang San";
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "student_import_template.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      };
-
-      const handleFileUpload = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const text = event.target.result;
-          const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
-          if (lines.length <= 1) {
-            showToast("CSV 檔案內容為空或無有效學生資料！", "error");
-            return;
-          }
-
-          const parsedStudents = [];
-          const detectedClasses = new Set();
-
-          for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
-            if (cols.length >= 2 && cols[0] && cols[1]) {
-              const classId = cols[0];
-              const nameZh = cols[1];
-              const nameEn = cols[2] || '';
-              detectedClasses.add(classId);
-              parsedStudents.push({ classId, nameZh, nameEn });
-            }
-          }
-
-          if (parsedStudents.length === 0) {
-            showToast("未從 CSV 解析到有效學生紀錄！", "error");
-            return;
-          }
-
-          setCsvPreviewData({
-            students: parsedStudents,
-            detectedClasses: Array.from(detectedClasses)
-          });
-        };
-        reader.readAsText(file);
-      };
-
-      const confirmCsvImport = () => {
-        if (!csvPreviewData) return;
-
-        const existingClassIds = new Set(classes.map(c => c.id));
-        const newClasses = [...classes];
-        csvPreviewData.detectedClasses.forEach(cId => {
-          if (!existingClassIds.has(cId)) {
-            newClasses.push({ id: cId, name: cId, teacher: '' });
-          }
-        });
-        setClasses(newClasses);
-
-        const newStudentList = [...students];
-        csvPreviewData.students.forEach(s => {
-          const classStudents = newStudentList.filter(st => st.classId === s.classId);
-          const nextSeatNum = classStudents.length + 1;
-          newStudentList.push({
-            id: `s_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-            classId: s.classId,
-            seatNum: nextSeatNum,
-            nameZh: s.nameZh,
-            nameEn: s.nameEn,
-            status: 'active'
-          });
-        });
-
-        setStudents(newStudentList);
-        showToast(`成功匯入 ${csvPreviewData.students.length} 名學生！`);
-        setCsvPreviewData(null);
-      };
-
-      const handleAddStudent = (e) => {
-        e.preventDefault();
-        if (!studentNameZh.trim() || !studentClassId) return;
-
-        const classStudents = students.filter(s => s.classId === studentClassId);
-        const nextSeatNum = classStudents.length + 1;
-
-        const newStudent = {
-          id: `s_${Date.now()}`,
-          classId: studentClassId,
-          seatNum: nextSeatNum,
-          nameZh: studentNameZh.trim(),
-          nameEn: studentNameEn.trim(),
-          status: 'active'
-        };
-
-        setStudents([...students, newStudent]);
-        setStudentNameZh("");
-        setStudentNameEn("");
-        showToast(`成功新增學生：${newStudent.nameZh}`);
-      };
-
-      const handleDeleteStudent = (id) => {
-        const target = students.find(s => s.id === id);
-        if (!target) return;
-        
-        const remainingStudents = students.filter(s => s.id !== id);
-        const updatedStudents = remainingStudents.map(s => {
-          if (s.classId === target.classId && s.seatNum > target.seatNum) {
-            return { ...s, seatNum: s.seatNum - 1 };
-          }
-          return s;
-        });
-
-        setStudents(updatedStudents);
-        showToast(`已刪除學生：${target.nameZh}`);
-      };
-
-      const handleAddClass = (e) => {
-        e.preventDefault();
-        if (!newClassName.trim()) return;
-
-        const classId = newClassName.trim().toUpperCase();
-        if (classes.some(c => c.id === classId)) {
-          showToast("該班別名稱已存在！", "error");
-          return;
-        }
-
-        const newClass = {
-          id: classId,
-          name: classId,
-          teacher: newClassTeacher.trim()
-        };
-
-        setClasses([...classes, newClass]);
-        setNewClassName("");
-        setNewClassTeacher("");
-        showToast(`成功新增班別：${classId}`);
-      };
-
-      const handlePromotion = () => {
-        if (!window.confirm("確定要執行全校學年升級嗎？這將會把所有班別年級 +1 並升級學生。")) return;
-
-        const promoteName = (name) => {
-          const match = name.match(/^(\d+)(.*)$/);
-          if (match) {
-            return `${parseInt(match[1]) + 1}${match[2]}`;
-          }
-          return `${name}_Up`;
-        };
-
-        const updatedClasses = classes.map(c => ({
-          ...c,
-          id: promoteName(c.id),
-          name: promoteName(c.name)
-        }));
-
-        const updatedStudents = students.map(s => ({
-          ...s,
-          classId: promoteName(s.classId)
-        }));
-
-        setClasses(updatedClasses);
-        setStudents(updatedStudents);
-        setRecords([]);
-        showToast("全校學年升級完成！舊欠交紀錄已重置。");
-      };
-
-      const appsScriptCode = `function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var payload = JSON.parse(e.postData.contents);
-  var records = payload.records || [];
-
-  if (payload.action === 'overwrite') {
-    sheet.clear();
-    // 設定表頭 (A欄: 欠交學生姓名, B欄: 欠交日期, C欄: 班別, D欄: 科目, E欄: 功課名稱)
-    sheet.appendRow(['欠交學生姓名', '欠交日期', '班別', '科目', '功課名稱']);
-    records.forEach(function(r) {
-      sheet.appendRow([r.studentName, r.date, r.className, r.subject, r.hwName]);
-    });
-  } else {
-    // 追加模式
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(['欠交學生姓名', '欠交日期', '班別', '科目', '功課名稱']);
-    }
-    records.forEach(function(r) {
-      sheet.appendRow([r.studentName, r.date, r.className, r.subject, r.hwName]);
-    });
-  }
-
-  return ContentService.createTextOutput(JSON.stringify({ result: "success" }))
-    .setMimeType(ContentService.MimeType.JSON);
-}`;
-
-      const handleCopyCode = () => {
-        const textarea = document.createElement('textarea');
-        textarea.value = appsScriptCode;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        showToast("Apps Script 程式碼已複製到剪貼簿！");
-      };
-
-      const handleFullSync = async () => {
-        if (!sheetUrl) {
-          showToast("請先輸入 Web App URL！", "error");
-          return;
-        }
-
-        setIsFullSyncing(true);
-        const missingRecords = records.filter(r => r.isMissing).map(r => {
-          const student = students.find(s => s.id === r.studentId);
-          return {
-            studentName: student ? `${student.nameZh} (${r.classId})` : "未知學生",
-            date: r.date,
-            className: r.classId,
-            subject: r.subject,
-            hwName: r.hwName || ''
-          };
-        });
-
-        try {
-          await fetch(sheetUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'overwrite', records: missingRecords })
-          });
-          showToast(`成功覆蓋同步全校 ${missingRecords.length} 筆欠交資料至 Google Sheet！`);
-        } catch (err) {
-          console.error(err);
-          showToast("同步失敗，請檢查網址設定。", "error");
-        } finally {
-          setIsFullSyncing(false);
-        }
-      };
-
-      const handleResetDefaultUrl = () => {
-        setSheetUrl(DEFAULT_GAS_URL);
-        showToast("已恢復為預設 GAS 網址！");
-      };
-
-      return (
-        <div class="space-y-6">
-          <div class="flex space-x-2 border-b border-slate-200 pb-3 overflow-x-auto">
-            <button
-              onClick={() => setAdminTab("gsheet")}
-              class={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center space-x-1.5 ${
-                adminTab === 'gsheet' ? 'bg-emerald-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <i data-lucide="sheet" class="w-4 h-4"></i>
-              <span>Google Sheet 即時同步設定</span>
-            </button>
-            <button
-              onClick={() => setAdminTab("students")}
-              class={`px-4 py-2 rounded-xl text-sm font-bold transition ${
-                adminTab === 'students' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              學生資料維護與匯入
-            </button>
-            <button
-              onClick={() => setAdminTab("classes")}
-              class={`px-4 py-2 rounded-xl text-sm font-bold transition ${
-                adminTab === 'classes' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              班別與班主任設定
-            </button>
-            <button
-              onClick={() => setAdminTab("promotion")}
-              class={`px-4 py-2 rounded-xl text-sm font-bold transition ${
-                adminTab === 'promotion' ? 'bg-rose-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              學年升級與歸檔
-            </button>
-          </div>
-
-          {/* 0. Google Sheet 即時同步設定 */}
-          {adminTab === 'gsheet' && (
-            <div class="space-y-6">
-              <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                <div class="flex items-center space-x-3">
-                  <div class="p-3 bg-emerald-100 rounded-2xl text-emerald-700">
-                    <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
-                  </div>
-                  <div>
-                    <h3 class="text-base font-bold text-slate-800">Google Sheet 即時同步設定</h3>
-                    <p class="text-xs text-slate-500">
-                      已預設為系統硬編碼之 GAS 網址，如無特別需求無需變更。
-                    </p>
-                  </div>
+            <!-- 表頭預設區 (Header Options) -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">登記日期</label>
+                    <input type="date" id="regDate" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
-
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    已發布的 Web App 網址 (URL)
-                  </label>
-                  <div class="flex gap-2">
-                    <input
-                      type="url"
-                      placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-                      value={sheetUrl}
-                      onChange={(e) => setSheetUrl(e.target.value.trim())}
-                      class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-emerald-500 outline-none"
-                    />
-                    <button
-                      onClick={handleResetDefaultUrl}
-                      class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl shrink-0 transition"
-                    >
-                      恢復預設網址
-                    </button>
-                  </div>
-                  <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-                    <span class="text-xs text-slate-500">
-                      欄位說明：<strong class="text-slate-700">A行 = 欠交學生姓名</strong> | <strong class="text-slate-700">B行 = 欠交日期</strong>
-                    </span>
-                    <button
-                      onClick={handleFullSync}
-                      disabled={isFullSyncing || !sheetUrl}
-                      class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-xl shadow transition flex items-center space-x-1.5"
-                    >
-                      <i data-lucide={isFullSyncing ? "refresh-cw" : "upload-cloud"} class={`w-4 h-4 ${isFullSyncing ? 'animate-spin' : ''}`}></i>
-                      <span>{isFullSyncing ? '全量覆蓋中...' : '一鍵將全部歷史紀錄覆蓋至 Google Sheet'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="border-t border-slate-200 pt-4 space-y-3">
-                  <h4 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
-                    <i data-lucide="help-circle" class="w-4 h-4 text-emerald-600"></i>
-                    <span>第一次設定：如何取得 Apps Script Web App 網址？（只需要設定 1 次）</span>
-                  </h4>
-
-                  <ol class="list-decimal list-inside text-xs text-slate-600 space-y-2 leading-relaxed">
-                    <li>
-                      打開你的 Google 試算表，點擊上方選單的 <strong>「擴充功能 (Extensions)」</strong> &rarr; <strong>「Apps Script」</strong>。
-                    </li>
-                    <li>
-                      清空原有的代碼，複製並貼上以下 JavaScript 代碼：
-                      <div class="mt-2 relative">
-                        <pre class="bg-slate-900 text-slate-100 p-3 rounded-xl font-mono text-[11px] overflow-x-auto max-h-48 custom-scrollbar">{appsScriptCode}</pre>
-                        <button
-                          onClick={handleCopyCode}
-                          class="absolute top-2 right-2 px-3 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg font-sans text-xs flex items-center space-x-1 backdrop-blur"
-                        >
-                          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                          <span>複製腳本</span>
-                        </button>
-                      </div>
-                    </li>
-                    <li>
-                      點擊右上角 <strong>「部署 (Deploy)」</strong> &rarr; <strong>「新增部署 (New deployment)」</strong>：
-                      <ul class="list-disc list-inside ml-4 mt-1 text-slate-500 space-y-0.5">
-                        <li>類型選擇：<strong>Web 應用程式 (Web app)</strong></li>
-                        <li>執行身分：<strong>我 (Me)</strong></li>
-                        <li>誰有存取權限：<strong>任何人 (Anyone)</strong>（重要！）</li>
-                      </ul>
-                    </li>
-                    <li>點擊「部署」授權後，複製生成的 <strong>Web 應用程式網址 (Web App URL)</strong> 並貼回上方文字框即完成設定！</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 1. 學生資料管理 */}
-          {adminTab === 'students' && (
-            <div class="space-y-6">
-              <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h3 class="text-base font-bold text-slate-800 mb-2 flex items-center space-x-2">
-                  <i data-lucide="file-up" class="w-5 h-5 text-indigo-600"></i>
-                  <span>CSV 批量匯入學生 (支援跨班)</span>
-                </h3>
-                <p class="text-xs text-slate-500 mb-4">
-                  請上傳 CSV 檔案，格式必須包含：<strong class="text-slate-700">班別, 中文姓名, 英文姓名</strong>。系統將自動建立未存在的班別，並自動生成 1, 2, 3... 順序座號。
-                </p>
-
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileUpload}
-                    class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 py-1 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
-                  />
-                  <button
-                    onClick={handleDownloadTemplate}
-                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1 shrink-0"
-                  >
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                    <span>下載 CSV 範本</span>
-                  </button>
-                </div>
-              </div>
-
-              <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center space-x-2">
-                  <i data-lucide="user-plus" class="w-5 h-5 text-indigo-600"></i>
-                  <span>手動新增單筆學生</span>
-                </h3>
-                <form onSubmit={handleAddStudent} class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">班別</label>
-                    <select
-                      value={studentClassId}
-                      onChange={(e) => setStudentClassId(e.target.value)}
-                      class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none"
-                    >
-                      {classes.map(c => (
-                        <option key={c.id} value={c.id}>{c.name} 班</option>
-                      ))}
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">班別</label>
+                    <select id="regClass" onchange="loadStudentGrid()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <!-- 動態載入班別 -->
                     </select>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">中文姓名</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="例如：黃小明"
-                      value={studentNameZh}
-                      onChange={(e) => setStudentNameZh(e.target.value)}
-                      class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">英文姓名</label>
-                    <input
-                      type="text"
-                      placeholder="Wong Siu Ming"
-                      value={studentNameEn}
-                      onChange={(e) => setStudentNameEn(e.target.value)}
-                      class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none"
-                    />
-                  </div>
-                  <div class="flex items-end">
-                    <button
-                      type="submit"
-                      class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition text-sm"
-                    >
-                      新增學生
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-4 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm">
-                  全校學生名單 (座號自動順序重編)
                 </div>
-                <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
-                  <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-100 text-xs font-bold text-slate-500 uppercase">
-                      <tr>
-                        <th class="py-2.5 px-4">班別</th>
-                        <th class="py-2.5 px-4">座號</th>
-                        <th class="py-2.5 px-4">中文姓名</th>
-                        <th class="py-2.5 px-4">英文姓名</th>
-                        <th class="py-2.5 px-4 text-center">操作</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 text-sm">
-                      {students.map(s => (
-                        <tr key={s.id} class="hover:bg-slate-50">
-                          <td class="py-2.5 px-4 font-semibold text-indigo-700">{s.classId}</td>
-                          <td class="py-2.5 px-4 font-mono">{s.seatNum}</td>
-                          <td class="py-2.5 px-4 font-bold text-slate-800">{s.nameZh}</td>
-                          <td class="py-2.5 px-4 text-slate-500 font-mono text-xs">{s.nameEn}</td>
-                          <td class="py-2.5 px-4 text-center">
-                            <button
-                              onClick={() => handleDeleteStudent(s.id)}
-                              class="text-rose-600 hover:text-rose-800 text-xs font-bold hover:underline"
-                            >
-                              刪除
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">科目</label>
+                    <select id="regSubject" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="中文">中國語文</option>
+                        <option value="英文">英國語文</option>
+                        <option value="數學">數學</option>
+                        <option value="常識">常識 / 常規科學</option>
+                        <option value="視覺藝術">視覺藝術</option>
+                    </select>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* 2. 班別與班主任管理 */}
-          {adminTab === 'classes' && (
-            <div class="space-y-6">
-              <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h3 class="text-base font-bold text-slate-800 mb-4">新增班別</h3>
-                <form onSubmit={handleAddClass} class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">班別名稱</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="例如：3A"
-                      value={newClassName}
-                      onChange={(e) => setNewClassName(e.target.value)}
-                      class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">班主任</label>
-                    <input
-                      type="text"
-                      placeholder="例如：歐陽老師"
-                      value={newClassTeacher}
-                      onChange={(e) => setNewClassTeacher(e.target.value)}
-                      class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none"
-                    />
-                  </div>
-                  <div class="flex items-end">
-                    <button
-                      type="submit"
-                      class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition text-sm"
-                    >
-                      新增班別
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-4 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm">
-                  現有班別列表
-                </div>
-                <div class="divide-y divide-slate-100">
-                  {classes.map(c => (
-                    <div key={c.id} class="p-4 flex justify-between items-center hover:bg-slate-50">
-                      <div>
-                        <span class="font-bold text-slate-800 text-base">{c.name} 班</span>
-                        <span class="ml-4 text-xs text-slate-500">班主任：<strong class="text-slate-700">{c.teacher || '未設定'}</strong></span>
-                      </div>
-                      <span class="text-xs text-slate-400">
-                        學生人數：{students.filter(s => s.classId === c.id).length} 人
-                      </span>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">作業名稱 / 項目</label>
+                    <div class="relative">
+                        <input type="text" id="regTaskName" list="commonTasks" placeholder="輸入或選擇作業名稱 (可留空)..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <datalist id="commonTasks">
+                            <option value="單元一工作紙">
+                            <option value="習作簿 P.10-12">
+                            <option value="默書查閱本">
+                            <option value="隨堂小測驗">
+                            <option value="專題報告提交">
+                        </datalist>
                     </div>
-                  ))}
                 </div>
-              </div>
             </div>
-          )}
 
-          {/* 3. 學年升級 */}
-          {adminTab === 'promotion' && (
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-              <h3 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
-                <i data-lucide="arrow-up-circle" class="w-5 h-5 text-rose-600"></i>
-                <span>全校學年升級 (Promotion)</span>
-              </h3>
-              <p class="text-sm text-slate-600 leading-relaxed">
-                點擊下方按鈕將執行全校升級程序：
-                <br />1. 所有班別名稱與學生所屬班別的年級自動 +1（例如 1A 升為 2A）。
-                <br />2. 清除舊學期的欠交功課紀錄並歸檔結算。
-              </p>
-              <div class="pt-2">
-                <button
-                  onClick={handlePromotion}
-                  class="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-lg transition flex items-center space-x-2"
-                >
-                  <i data-lucide="zap" class="w-5 h-5"></i>
-                  <span>一鍵執行全校學年升級</span>
+            <!-- Data Grid 表格主體 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm font-semibold text-slate-700">學生清單 (共 <span id="gridStudentCount">0</span> 人)</span>
+                        <div class="text-xs text-slate-500 flex items-center space-x-3">
+                            <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block mr-1"></span>出席已交: <strong id="statPresentOk" class="ml-1 text-slate-700">0</strong></span>
+                            <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block mr-1"></span>欠交: <strong id="statMissing" class="ml-1 text-slate-700">0</strong></span>
+                            <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block mr-1"></span>缺席不計: <strong id="statAbsent" class="ml-1 text-slate-700">0</strong></span>
+                        </div>
+                    </div>
+                    <button onclick="toggleAllMissing(false)" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium border border-indigo-200 bg-indigo-50 px-2.5 py-1 rounded">
+                        重設全班為「已繳交」
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto max-h-[550px] overflow-y-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-100 text-slate-600 text-xs font-semibold uppercase sticky top-0 z-10 border-b border-slate-200">
+                            <tr>
+                                <th class="p-3 w-16 text-center">座號</th>
+                                <th class="p-3 w-36">學生姓名</th>
+                                <th class="p-3 w-36">出席狀態 (Attendance)</th>
+                                <th class="p-3 w-32 text-center">
+                                    <label class="inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllMissing(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                        <span class="ml-2">全選欠交</span>
+                                    </label>
+                                </th>
+                                <th class="p-3">備註 / 欠交說明</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentGridBody" class="divide-y divide-slate-200 text-sm">
+                            <!-- 動態生成 Data Grid Rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 底部提交與操作列 -->
+                <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                    <div class="text-xs text-slate-500">
+                        <i class="fa-solid fa-circle-info mr-1"></i>快捷提醒：鍵盤上下鍵切換行，<kbd class="border px-1 rounded bg-white">Space</kbd> 可快速變更欠交勾選。
+                    </div>
+                    <button onclick="saveRegistration()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition flex items-center space-x-2">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>儲存登記 (Ctrl + S)</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 統計與報表檢視 -->
+        <section id="view-reports" class="hidden space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">班別</label>
+                        <select id="reportClass" onchange="renderReportTable()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
+                            <!-- 動態載入 -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">科目</label>
+                        <select id="reportSubject" onchange="renderReportTable()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
+                            <option value="ALL">全部科目</option>
+                            <option value="中文">中國語文</option>
+                            <option value="英文">英國語文</option>
+                            <option value="數學">數學</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="exportReportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 shadow-sm">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span>匯出 Excel 報表</span>
                 </button>
-              </div>
             </div>
-          )}
 
-          {/* CSV 預覽 Modal */}
-          {csvPreviewData && (
-            <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
-                <h3 class="text-lg font-bold text-slate-800">確認匯入 CSV 資料</h3>
-                <p class="text-xs text-slate-500">
-                  即將匯入 <strong class="text-indigo-600">{csvPreviewData.students.length}</strong> 名學生，包含以下班別：
-                  {csvPreviewData.detectedClasses.join(', ')}。
-                </p>
-
-                <div class="max-h-60 overflow-y-auto border border-slate-200 rounded-xl p-2 text-xs font-mono bg-slate-50">
-                  {csvPreviewData.students.map((s, idx) => (
-                    <div key={idx} class="py-1 border-b border-slate-100 last:border-0">
-                      {s.classId}班 - {s.nameZh} ({s.nameEn})
+            <!-- 數據統計卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="p-3 bg-red-100 text-red-600 rounded-lg"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
+                    <div>
+                        <div class="text-xs text-slate-500 font-bold uppercase">累積欠交總人次</div>
+                        <div id="totalMissingCount" class="text-2xl font-black text-slate-800">0</div>
                     </div>
-                  ))}
                 </div>
-
-                <div class="flex justify-end space-x-3 pt-2">
-                  <button
-                    onClick={() => setCsvPreviewData(null)}
-                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl"
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={confirmCsvImport}
-                    class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow"
-                  >
-                    確認批量匯入
-                  </button>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="p-3 bg-amber-100 text-amber-600 rounded-lg"><i class="fa-solid fa-user-slash text-2xl"></i></div>
+                    <div>
+                        <div class="text-xs text-slate-500 font-bold uppercase">缺席不計算欠交次數</div>
+                        <div id="totalExcusedCount" class="text-2xl font-black text-slate-800">0</div>
+                    </div>
                 </div>
-              </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="p-3 bg-indigo-100 text-indigo-600 rounded-lg"><i class="fa-solid fa-book-bookmark text-2xl"></i></div>
+                    <div>
+                        <div class="text-xs text-slate-500 font-bold uppercase">已登記作業總數</div>
+                        <div id="totalTaskCount" class="text-2xl font-black text-slate-800">0</div>
+                    </div>
+                </div>
             </div>
-          )}
-        </div>
-      );
-    }
 
-    // 渲染應用
-    ReactDOM.render(<App />, document.getElementById('root'));
-  </script>
+            <!-- 歷史紀錄表格 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm">
+                    欠交與缺席明細紀錄
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-100 text-slate-600 text-xs font-semibold uppercase">
+                            <tr>
+                                <th class="p-3">日期</th>
+                                <th class="p-3">班別 / 座號 / 姓名</th>
+                                <th class="p-3">科目</th>
+                                <th class="p-3">作業名稱</th>
+                                <th class="p-3">出席狀態</th>
+                                <th class="p-3">欠交狀態</th>
+                                <th class="p-3">備註</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody" class="divide-y divide-slate-200">
+                            <!-- 動態載入歷史紀錄 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Admin 管理者後台專區 -->
+        <section id="view-admin" class="hidden space-y-6">
+            <!-- 權限警示標籤 -->
+            <div id="adminAccessWarning" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800 flex items-center space-x-3">
+                <i class="fa-solid fa-lock text-xl text-amber-600"></i>
+                <div>
+                    <span class="font-bold">權限受限：</span>您目前的角色無權修改管理者資料，僅能進行檢視。請於右上角切換至「系統管理者 (Admin)」。
+                </div>
+            </div>
+
+            <!-- 管理後台控制選項 Tab -->
+            <div class="bg-white p-2 rounded-xl shadow-sm border border-slate-200 flex space-x-2">
+                <button onclick="switchAdminSubTab('students')" id="adminTab-students" class="admin-subtab-btn px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 text-indigo-600">
+                    <i class="fa-solid fa-users mr-1.5"></i>學生資料庫管理
+                </button>
+                <button onclick="switchAdminSubTab('classes')" id="adminTab-classes" class="admin-subtab-btn px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">
+                    <i class="fa-solid fa-school mr-1.5"></i>班別與學年維護
+                </button>
+                <button onclick="switchAdminSubTab('promotion')" id="adminTab-promotion" class="admin-subtab-btn px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">
+                    <i class="fa-solid fa-graduation-cap mr-1.5"></i>學年批次升級 (Promotion)
+                </button>
+            </div>
+
+            <!-- SubTab 1: 學生資料管理 -->
+            <div id="adminSub-students" class="space-y-4">
+                <!-- Google Apps Script 試算表同步設定區 (已移至 Admin 後台) -->
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2 text-emerald-900 w-full md:w-auto">
+                        <i class="fa-solid fa-file-excel text-emerald-600 text-lg"></i>
+                        <span class="font-bold text-sm">Google 試算表同步設定 (Admin)：</span>
+                    </div>
+                    <div class="flex-grow flex items-center space-x-2 w-full md:w-auto">
+                        <input type="text" id="gasWebhookUrl" value="https://script.google.com/macros/s/AKfycbxdNinOitdJ35aE363yqROblvp5bpInhdv5RppRsB-HY-g7lpLO84J6-mv81_C4XpfY/exec" placeholder="貼上 Google Apps Script 網址 (https://script.google.com/macros/s/.../exec)" class="w-full border border-emerald-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white">
+                        <button onclick="saveGasUrl()" class="admin-only-btn bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shadow-sm">
+                            儲存網址
+                        </button>
+                        <button onclick="openGasScriptModal()" class="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap">
+                            <i class="fa-solid fa-code mr-1"></i>查看 Apps Script 原始碼
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 工具列：匯入、搜尋、手動新增 -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
+                    <div class="flex items-center space-x-3 flex-grow max-w-md">
+                        <div class="relative w-full">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+                            <input type="text" id="adminSearchInput" onkeyup="filterAdminStudents()" placeholder="搜尋姓名、學號、班別..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openImportModal()" class="admin-only-btn bg-slate-800 hover:bg-slate-900 text-white px-3.5 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 shadow-sm">
+                            <i class="fa-solid fa-file-csv"></i>
+                            <span>批量匯入 CSV/Excel</span>
+                        </button>
+                        <button onclick="openAddStudentModal()" class="admin-only-btn bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 shadow-sm">
+                            <i class="fa-solid fa-user-plus"></i>
+                            <span>手動新增學生</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 學生資料表格 -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto max-h-[500px]">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-slate-100 text-slate-600 text-xs font-semibold uppercase sticky top-0">
+                                <tr>
+                                    <th class="p-3">學號</th>
+                                    <th class="p-3">班別</th>
+                                    <th class="p-3">座號</th>
+                                    <th class="p-3">中文姓名</th>
+                                    <th class="p-3">英文姓名</th>
+                                    <th class="p-3 text-center">狀態</th>
+                                    <th class="p-3 text-center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminStudentTableBody" class="divide-y divide-slate-200">
+                                <!-- 動態載入學生名單 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SubTab 2: 班別與班導師維護 -->
+            <div id="adminSub-classes" class="hidden space-y-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 text-base">目前學年班別結構 (2026/2027)</h3>
+                    <button onclick="openAddClassModal()" class="admin-only-btn bg-indigo-600 text-white px-3.5 py-2 rounded-lg text-sm font-medium flex items-center space-x-1">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>新增班別</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="classListContainer">
+                    <!-- 動態載入班別卡片 -->
+                </div>
+            </div>
+
+            <!-- SubTab 3: 學年升級 -->
+            <div id="adminSub-promotion" class="hidden space-y-4">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="border-l-4 border-amber-500 pl-4 py-1">
+                        <h3 class="text-lg font-bold text-slate-800">一鍵學年升級作業 (Academic Year Promotion)</h3>
+                        <p class="text-sm text-slate-600 mt-1">執行全校升級後，學生班別將自動往上升級（如 1A $\rightarrow$ 2A，6 年級轉為畢業生），且本學期的所有欠交紀錄將會自動結算並歸檔至歷史資料庫。</p>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-xs text-amber-900 space-y-1">
+                        <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>注意事項：</p>
+                        <p>1. 升級前建議先將本學期欠交報表匯出備份。</p>
+                        <p>2. 此操作無法復原，請確保全校期末成績與紀錄皆已結算完畢。</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-200 flex justify-end">
+                        <button onclick="executePromotion()" class="admin-only-btn bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm shadow flex items-center space-x-2">
+                            <i class="fa-solid fa-angles-up"></i>
+                            <span>執行全校學年一鍵升級</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal 1: 批量匯入 Modal -->
+    <div id="importModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-lg text-slate-800">批量匯入學生名單 (CSV / Excel)</h3>
+                <button onclick="closeModal('importModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3">
+                <p class="text-xs text-slate-600">請上傳包含以下欄位的 CSV 或 Excel 檔案：<br><code class="bg-slate-100 px-1 rounded text-indigo-600">學號, 班別, 座號, 中文姓名, 英文姓名</code></p>
+                <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-indigo-500 transition cursor-pointer" onclick="document.getElementById('csvFileInput').click()">
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
+                    <p class="text-sm font-medium text-slate-700">點擊選擇檔案 或 將檔案拖曳至此</p>
+                    <input type="file" id="csvFileInput" accept=".csv, .xlsx, .xls" onchange="handleFileUpload(event)" class="hidden">
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <a href="#" onclick="downloadCSVTemplate()" class="text-indigo-600 hover:underline"><i class="fa-solid fa-download mr-1"></i>下載標準範本 CSV</a>
+                    <span id="importFileName" class="text-slate-500 font-mono"></span>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button onclick="closeModal('importModal')" class="px-4 py-2 border rounded-lg text-sm font-medium text-slate-600">取消</button>
+                <button onclick="processImport()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">確認匯入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: 新增/編輯學生 Modal -->
+    <div id="studentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="studentModalTitle" class="font-bold text-lg text-slate-800">新增學生資料</h3>
+                <button onclick="closeModal('studentModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="studentForm" class="space-y-3 text-sm">
+                <input type="hidden" id="mStudentIdx">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">學號 (Student ID)</label>
+                    <input type="text" id="mStudentId" required class="w-full border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">班別</label>
+                        <select id="mStudentClass" class="w-full border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500">
+                            <!-- 動態載入 -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">座號</label>
+                        <input type="number" id="mStudentSeat" required min="1" class="w-full border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">中文姓名</label>
+                    <input type="text" id="mStudentName" required class="w-full border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">英文姓名</label>
+                    <input type="text" id="mStudentNameEn" class="w-full border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="closeModal('studentModal')" class="px-4 py-2 border rounded-lg text-slate-600">取消</button>
+                    <button type="button" onclick="saveStudentModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Google Apps Script 教學與程式碼 Modal -->
+    <div id="gasScriptModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-lg text-slate-800">Google Apps Script 試算表設定指南</h3>
+                <button onclick="closeModal('gasScriptModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 text-xs text-slate-600 max-h-[60vh] overflow-y-auto">
+                <p class="font-bold text-sm text-slate-800">設定步驟：</p>
+                <ol class="list-decimal pl-5 space-y-1">
+                    <li>開啟您的 Google 試算表，點擊選單列的 <strong>「擴充功能」 $\rightarrow$ 「Apps Script」</strong>。</li>
+                    <li>將以下程式碼貼入腳本編輯器中（覆蓋原始 `Code.gs` 的內容）。</li>
+                    <li>點擊右上方 <strong>「部署」 $\rightarrow$ 「新建部署」</strong>。</li>
+                    <li>種類選擇 <strong>「網頁應用程式 (Web App)」</strong>。</li>
+                    <li>誰可以存取 (Who has access) 必須選擇：<strong>「所有人 (Anyone)」</strong>。</li>
+                    <li>完成部署後複製「網頁應用程式 URL」，並貼至 Admin 管理者後台的設定欄位中。</li>
+                </ol>
+
+                <p class="font-bold text-sm text-slate-800 pt-2">Google Apps Script 原始碼 (僅寫入：班別、姓名、欠交日期)：</p>
+                <div class="relative">
+                    <pre id="gasCodeSnippet" class="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto select-all">
+function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    
+    // 若工作表為空，自動建置表頭
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["班別", "姓名", "欠交日期"]);
+      sheet.getRange(1, 1, 1, 3).setFontWeight("bold").setBackground("#f3f4f6");
+    }
+    
+    var data = JSON.parse(e.postData.contents);
+    
+    // 批次寫入所有欠交學生紀錄
+    if (Array.isArray(data) && data.length > 0) {
+      data.forEach(function(row) {
+        sheet.appendRow([row.className, row.studentName, row.date]);
+      });
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: data.length }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+                </div>
+            </div>
+            <div class="flex justify-end pt-3 border-t">
+                <button onclick="closeModal('gasScriptModal')" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全局提示 Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center space-x-3 transition-opacity duration-300 opacity-0 pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toastMsg" class="text-sm font-medium">操作成功</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, addDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // 1. 初始化 Firebase 與 Firestore 設定
+        // ==========================================
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'homework-management-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "demo-key",
+            authDomain: "demo.firebaseapp.com",
+            projectId: "demo-project",
+            storageBucket: "demo.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:demo"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 定義全域變數綁定至 window 以利 HTML 事件呼叫
+        window.currentRole = 'Admin';
+        window.classesDB = [];
+        window.studentsDB = [];
+        window.homeworkLogsDB = [];
+        window.importedTempData = [];
+
+        const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxdNinOitdJ35aE363yqROblvp5bpInhdv5RppRsB-HY-g7lpLO84J6-mv81_C4XpfY/exec';
+
+        // 預設預載資料 (當資料庫完全空白時會進行初始化)
+        const defaultClasses = [
+            { id: '1A', name: '1A 班', teacher: '王美麗 老師' },
+            { id: '1B', name: '1B 班', teacher: '陳大文 老師' },
+            { id: '2A', name: '2A 班', teacher: '張立德 老師' },
+            { id: '2B', name: '2B 班', teacher: '李心怡 老師' }
+        ];
+
+        const defaultStudents = [
+            { id: '2026001', class: '1A', seat: 1, name: '陳小明', nameEn: 'Chan Siu Ming', status: 'Active' },
+            { id: '2026002', class: '1A', seat: 2, name: '張大華', nameEn: 'Cheung Tai Wa', status: 'Active' },
+            { id: '2026003', class: '1A', seat: 3, name: '李美玲', nameEn: 'Lee Mei Ling', status: 'Active' },
+            { id: '2026004', class: '1A', seat: 4, name: '黃子豪', nameEn: 'Wong Tsz Ho', status: 'Active' },
+            { id: '2026005', class: '1A', seat: 5, name: '林家欣', nameEn: 'Lam Ka Yan', status: 'Active' },
+            { id: '2026006', class: '1B', seat: 1, name: '趙一鳴', nameEn: 'Chiu Yat Ming', status: 'Active' },
+            { id: '2026007', class: '1B', seat: 2, name: '周曉彤', nameEn: 'Chow Hiu Tung', status: 'Active' },
+            { id: '2026008', class: '2A', seat: 1, name: '吳志強', nameEn: 'Ng Chi Keung', status: 'Active' }
+        ];
+
+        // 集合雲端路徑 (遵循公用數據規範)
+        const classesColl = collection(db, 'artifacts', appId, 'public', 'data', 'classes');
+        const studentsColl = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+        const logsColl = collection(db, 'artifacts', appId, 'public', 'data', 'homework_logs');
+
+        async function initApp() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                updateSyncBadge(true, '實時同步中');
+                setupRealtimeListeners();
+            } catch (err) {
+                console.error("Auth error:", err);
+                updateSyncBadge(false, '離線模式');
+            }
+        }
+
+        function updateSyncBadge(isLive, text) {
+            const badge = document.getElementById('syncStatusBadge');
+            const statusText = document.getElementById('syncStatusText');
+            if (!badge || !statusText) return;
+
+            if (isLive) {
+                badge.className = "flex items-center space-x-1.5 text-xs bg-emerald-950/80 text-emerald-400 border border-emerald-800 px-2.5 py-1 rounded-full font-medium";
+                statusText.textContent = text;
+            } else {
+                badge.className = "flex items-center space-x-1.5 text-xs bg-amber-950/80 text-amber-400 border border-amber-800 px-2.5 py-1 rounded-full font-medium";
+                statusText.textContent = text;
+            }
+        }
+
+        function setupRealtimeListeners() {
+            // 1. 監聽班別資料
+            onSnapshot(classesColl, async (snapshot) => {
+                if (snapshot.empty) {
+                    const batch = writeBatch(db);
+                    defaultClasses.forEach(c => {
+                        batch.set(doc(classesColl, c.id), c);
+                    });
+                    await batch.commit();
+                } else {
+                    window.classesDB = snapshot.docs.map(doc => doc.data());
+                    populateClassSelects();
+                    renderAdminClasses();
+                }
+            }, (error) => console.error("Classes sync error:", error));
+
+            // 2. 監聽學生名單
+            onSnapshot(studentsColl, async (snapshot) => {
+                if (snapshot.empty) {
+                    const batch = writeBatch(db);
+                    defaultStudents.forEach(s => {
+                        batch.set(doc(studentsColl, s.id), s);
+                    });
+                    await batch.commit();
+                } else {
+                    window.studentsDB = snapshot.docs.map(doc => doc.data());
+                    loadStudentGrid();
+                    renderAdminStudents();
+                }
+            }, (error) => console.error("Students sync error:", error));
+
+            // 3. 監聽欠交與作業紀錄
+            onSnapshot(logsColl, (snapshot) => {
+                window.homeworkLogsDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderReportTable();
+            }, (error) => console.error("Logs sync error:", error));
+        }
+
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-indigo-600', 'text-indigo-600');
+                btn.classList.add('border-transparent', 'text-slate-600');
+            });
+
+            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('border-indigo-600', 'text-indigo-600');
+            activeBtn.classList.remove('border-transparent', 'text-slate-600');
+
+            if (tabName === 'reports') renderReportTable();
+        };
+
+        window.switchAdminSubTab = function(subTabName) {
+            document.querySelectorAll('#view-admin > div[id^="adminSub-"]').forEach(div => div.classList.add('hidden'));
+            document.querySelectorAll('.admin-subtab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-50', 'text-indigo-600');
+                btn.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`adminSub-${subTabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`adminTab-${subTabName}`);
+            activeBtn.classList.add('bg-indigo-50', 'text-indigo-600');
+        };
+
+        window.changeRole = function(role) {
+            window.currentRole = role;
+            const userInfo = document.getElementById('userInfo');
+            const adminWarning = document.getElementById('adminAccessWarning');
+
+            if (role === 'Teacher') {
+                userInfo.textContent = '任課教師 (限課目登記與報表)';
+                adminWarning.classList.remove('hidden');
+            } else if (role === 'FormTeacher') {
+                userInfo.textContent = '班導師 - 1A 班 (1A 班權限)';
+                adminWarning.classList.remove('hidden');
+            } else {
+                userInfo.textContent = '系統管理員 (全校權限)';
+                adminWarning.classList.add('hidden');
+            }
+
+            const adminOnlyElements = document.querySelectorAll('.admin-only-btn');
+            adminOnlyElements.forEach(el => {
+                if (role !== 'Admin') {
+                    el.classList.add('opacity-50', 'pointer-events-none');
+                } else {
+                    el.classList.remove('opacity-50', 'pointer-events-none');
+                }
+            });
+
+            populateClassSelects();
+            loadStudentGrid();
+            renderReportTable();
+        };
+
+        window.populateClassSelects = function() {
+            const regClass = document.getElementById('regClass');
+            const reportClass = document.getElementById('reportClass');
+            const mStudentClass = document.getElementById('mStudentClass');
+
+            if (!regClass || !reportClass || !mStudentClass) return;
+
+            const prevRegVal = regClass.value;
+            const prevReportVal = reportClass.value;
+
+            regClass.innerHTML = '';
+            reportClass.innerHTML = '<option value="ALL">全校班別</option>';
+            mStudentClass.innerHTML = '';
+
+            window.classesDB.forEach(c => {
+                if (window.currentRole === 'FormTeacher' && c.id !== '1A') return;
+
+                regClass.add(new Option(`${c.id} (${c.teacher})`, c.id));
+                reportClass.add(new Option(c.id, c.id));
+                mStudentClass.add(new Option(c.id, c.id));
+            });
+
+            if (prevRegVal) regClass.value = prevRegVal;
+            if (prevReportVal) reportClass.value = prevReportVal;
+        };
+
+        window.saveGasUrl = function() {
+            if (window.currentRole !== 'Admin') {
+                showToast('僅 Admin 具備設定同步網址之權限', 'error');
+                return;
+            }
+            const url = document.getElementById('gasWebhookUrl').value.trim();
+            localStorage.setItem('gas_webhook_url', url);
+            showToast('Google 試算表同步網址已成功儲存！', 'success');
+        };
+
+        window.openGasScriptModal = function() {
+            document.getElementById('gasScriptModal').classList.remove('hidden');
+        };
+
+        window.loadStudentGrid = function() {
+            const selectedClass = document.getElementById('regClass').value;
+            const gridBody = document.getElementById('studentGridBody');
+            if (!gridBody) return;
+            gridBody.innerHTML = '';
+
+            const filteredStudents = window.studentsDB
+                .filter(s => s.class === selectedClass && s.status === 'Active')
+                .sort((a, b) => a.seat - b.seat);
+
+            document.getElementById('gridStudentCount').textContent = filteredStudents.length;
+
+            if (filteredStudents.length === 0) {
+                gridBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400">此班別目前尚無學生資料</td></tr>`;
+                updateGridStats();
+                return;
+            }
+
+            filteredStudents.forEach((student, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition grid-row';
+                tr.setAttribute('data-index', index);
+
+                tr.innerHTML = `
+                    <td class="p-3 text-center font-mono font-bold text-slate-600">${String(student.seat).padStart(2, '0')}</td>
+                    <td class="p-3 font-semibold text-slate-800">
+                        ${student.name}
+                        <span class="block text-xs text-slate-400 font-normal">${student.nameEn || ''}</span>
+                    </td>
+                    <td class="p-3">
+                        <select onchange="handleAttendanceChange(${index}, this.value)" class="attendance-select border border-slate-300 rounded px-2 py-1 text-xs focus:ring-2 focus:ring-indigo-500">
+                            <option value="Present" selected>出席</option>
+                            <option value="Sick_Leave">病假</option>
+                            <option value="Personal_Leave">事假</option>
+                            <option value="Official_Leave">公假</option>
+                            <option value="Absence">無故缺席</option>
+                        </select>
+                    </td>
+                    <td class="p-3 text-center">
+                        <input type="checkbox" id="chk_${index}" onchange="updateRowState(${index})" class="missing-checkbox rounded text-red-600 focus:ring-red-500 h-5 w-5 cursor-pointer">
+                    </td>
+                    <td class="p-3">
+                        <input type="text" id="remark_${index}" placeholder="備註或欠交理由..." class="remark-input w-full border border-slate-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500">
+                    </td>
+                `;
+
+                tr.addEventListener('keydown', (e) => handleGridKeyDown(e, index));
+                gridBody.appendChild(tr);
+            });
+
+            updateGridStats();
+        };
+
+        window.handleAttendanceChange = function(index, value) {
+            const chk = document.getElementById(`chk_${index}`);
+            const remark = document.getElementById(`remark_${index}`);
+            const select = document.querySelectorAll('.attendance-select')[index];
+
+            if (value !== 'Present') {
+                chk.checked = false;
+                chk.disabled = true;
+                remark.disabled = true;
+                remark.value = `[${getAttendanceText(value)} - 不計欠交]`;
+                select.classList.add('text-red-600', 'font-bold');
+            } else {
+                chk.disabled = false;
+                remark.disabled = false;
+                if (remark.value.includes('不計欠交')) remark.value = '';
+                select.classList.remove('text-red-600', 'font-bold');
+            }
+            updateRowState(index);
+            updateGridStats();
+        };
+
+        function getAttendanceText(type) {
+            const map = { 'Sick_Leave': '病假', 'Personal_Leave': '事假', 'Official_Leave': '公假', 'Absence': '無故缺席' };
+            return map[type] || '缺席';
+        }
+
+        window.updateRowState = function(index) {
+            const rows = document.querySelectorAll('#studentGridBody tr');
+            const chk = document.getElementById(`chk_${index}`);
+            if (rows[index]) {
+                if (chk && chk.checked) {
+                    rows[index].classList.add('bg-red-50');
+                } else {
+                    rows[index].classList.remove('bg-red-50');
+                }
+            }
+            updateGridStats();
+        };
+
+        function handleGridKeyDown(e, currentIndex) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const nextRow = document.querySelectorAll('#studentGridBody tr')[currentIndex + 1];
+                if (nextRow) focusRow(nextRow);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prevRow = document.querySelectorAll('#studentGridBody tr')[currentIndex - 1];
+                if (prevRow) focusRow(prevRow);
+            } else if (e.key === ' ' || e.code === 'Space') {
+                if (document.activeElement.tagName !== 'INPUT' || document.activeElement.type === 'checkbox') {
+                    e.preventDefault();
+                    const chk = document.getElementById(`chk_${currentIndex}`);
+                    if (chk && !chk.disabled) {
+                        chk.checked = !chk.checked;
+                        updateRowState(currentIndex);
+                    }
+                }
+            }
+        }
+
+        function focusRow(rowElement) {
+            document.querySelectorAll('#studentGridBody tr').forEach(r => r.classList.remove('row-selected'));
+            rowElement.classList.add('row-selected');
+            const chk = rowElement.querySelector('.missing-checkbox');
+            if (chk) chk.focus();
+        }
+
+        window.toggleSelectAllMissing = function(checked) {
+            const checkboxes = document.querySelectorAll('.missing-checkbox');
+            checkboxes.forEach((chk, idx) => {
+                if (!chk.disabled) {
+                    chk.checked = checked;
+                    updateRowState(idx);
+                }
+            });
+            updateGridStats();
+        };
+
+        window.toggleAllMissing = function(status) {
+            document.getElementById('selectAllCheckbox').checked = status;
+            toggleSelectAllMissing(status);
+        };
+
+        function updateGridStats() {
+            const rows = document.querySelectorAll('#studentGridBody tr');
+            let presentOk = 0;
+            let missing = 0;
+            let absent = 0;
+
+            rows.forEach((r, idx) => {
+                const attSelect = r.querySelector('.attendance-select');
+                const chk = document.getElementById(`chk_${idx}`);
+                if (!attSelect) return;
+
+                if (attSelect.value !== 'Present') {
+                    absent++;
+                } else if (chk && chk.checked) {
+                    missing++;
+                } else {
+                    presentOk++;
+                }
+            });
+
+            document.getElementById('statPresentOk').textContent = presentOk;
+            document.getElementById('statMissing').textContent = missing;
+            document.getElementById('statAbsent').textContent = absent;
+        }
+
+        window.saveRegistration = async function() {
+            const regDate = document.getElementById('regDate').value;
+            const regClass = document.getElementById('regClass').value;
+            const regSubject = document.getElementById('regSubject').value;
+            const regTaskName = document.getElementById('regTaskName').value.trim();
+
+            const currentStudents = window.studentsDB.filter(s => s.class === regClass && s.status === 'Active').sort((a,b)=>a.seat-b.seat);
+            let missingToSync = [];
+            const batch = writeBatch(db);
+
+            currentStudents.forEach((student, idx) => {
+                const attSelect = document.querySelectorAll('.attendance-select')[idx];
+                const chk = document.getElementById(`chk_${idx}`);
+                const remark = document.getElementById(`remark_${idx}`);
+
+                if (attSelect) {
+                    const isMissing = chk.checked;
+                    const attendance = attSelect.value;
+
+                    const newDocRef = doc(logsColl);
+                    batch.set(newDocRef, {
+                        date: regDate,
+                        class: regClass,
+                        subject: regSubject,
+                        taskName: regTaskName || '-',
+                        studentId: student.id,
+                        studentName: student.name,
+                        attendance: attendance,
+                        isMissing: isMissing,
+                        remark: remark.value,
+                        createdAt: new Date().toISOString()
+                    });
+
+                    if (attendance === 'Present' && isMissing) {
+                        missingToSync.push({
+                            className: regClass,
+                            studentName: student.name,
+                            date: regDate
+                        });
+                    }
+                }
+            });
+
+            await batch.commit();
+            showToast(`已成功同步登記 ${currentStudents.length} 筆資料！`, 'success');
+
+            const gasUrl = localStorage.getItem('gas_webhook_url') || document.getElementById('gasWebhookUrl').value.trim() || DEFAULT_GAS_URL;
+            if (gasUrl && missingToSync.length > 0) {
+                syncToGoogleSheets(gasUrl, missingToSync);
+            }
+        };
+
+        function syncToGoogleSheets(url, dataPayload) {
+            showToast('正同步寫入至 Google 試算表...', 'success');
+            fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataPayload)
+            })
+            .then(() => showToast(`成功同步 ${dataPayload.length} 筆欠交紀錄至 Google 試算表！`, 'success'))
+            .catch(err => {
+                console.error('Google Sheets Sync Error:', err);
+                showToast('試算表同步失敗，請檢查 Apps Script 網址。', 'error');
+            });
+        }
+
+        window.renderReportTable = function() {
+            const selectedClass = document.getElementById('reportClass').value;
+            const selectedSub = document.getElementById('reportSubject').value;
+            const tbody = document.getElementById('reportTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            let filtered = window.homeworkLogsDB.filter(log => {
+                const matchClass = (selectedClass === 'ALL' || log.class === selectedClass);
+                const matchSub = (selectedSub === 'ALL' || log.subject === selectedSub);
+                return matchClass && matchSub;
+            });
+
+            let missingCount = filtered.filter(l => l.isMissing).length;
+            let excusedCount = filtered.filter(l => l.attendance !== 'Present').length;
+            let taskSet = new Set(filtered.map(l => `${l.date}_${l.class}_${l.subject}_${l.taskName}`));
+
+            document.getElementById('totalMissingCount').textContent = missingCount;
+            document.getElementById('totalExcusedCount').textContent = excusedCount;
+            document.getElementById('totalTaskCount').textContent = taskSet.size;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">尚無相關登記紀錄</td></tr>`;
+                return;
+            }
+
+            filtered.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).forEach(log => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+
+                let attBadge = '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-medium">出席</span>';
+                if (log.attendance !== 'Present') {
+                    attBadge = `<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium">${getAttendanceText(log.attendance)}</span>`;
+                }
+
+                let statusBadge = '<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">已繳交</span>';
+                if (log.attendance !== 'Present') {
+                    statusBadge = '<span class="text-xs bg-slate-100 text-slate-400 px-2 py-0.5 rounded">不計算欠交</span>';
+                } else if (log.isMissing) {
+                    statusBadge = '<span class="text-xs bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded">欠交</span>';
+                }
+
+                tr.innerHTML = `
+                    <td class="p-3 font-mono text-xs text-slate-500">${log.date}</td>
+                    <td class="p-3 font-medium text-slate-800">${log.class} - ${log.studentName}</td>
+                    <td class="p-3 text-slate-600">${log.subject}</td>
+                    <td class="p-3 font-medium text-indigo-900">${log.taskName || '-'}</td>
+                    <td class="p-3">${attBadge}</td>
+                    <td class="p-3">${statusBadge}</td>
+                    <td class="p-3 text-xs text-slate-500">${log.remark || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.exportReportToExcel = function() {
+            const worksheet = XLSX.utils.json_to_sheet(window.homeworkLogsDB.map(l => ({
+                日期: l.date,
+                班別: l.class,
+                學生姓名: l.studentName,
+                學號: l.studentId,
+                科目: l.subject,
+                作業名稱: l.taskName,
+                出席狀態: l.attendance,
+                是否欠交: l.isMissing ? '是' : '否',
+                備註: l.remark
+            })));
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "欠交統計報表");
+            XLSX.writeFile(workbook, `功課欠交與出席紀錄報表_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showToast('Excel 報表匯出成功！', 'success');
+        };
+
+        window.renderAdminStudents = function() {
+            const tbody = document.getElementById('adminStudentTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            window.studentsDB.forEach((student) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="p-3 font-mono text-xs text-slate-500">${student.id}</td>
+                    <td class="p-3 font-bold text-slate-700">${student.class}</td>
+                    <td class="p-3 font-mono text-center">${student.seat}</td>
+                    <td class="p-3 font-medium text-slate-800">${student.name}</td>
+                    <td class="p-3 text-slate-500 text-xs">${student.nameEn || '-'}</td>
+                    <td class="p-3 text-center">
+                        <span class="text-xs px-2 py-0.5 rounded-full ${student.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">
+                            ${student.status === 'Active' ? '在學' : '離校'}
+                        </span>
+                    </td>
+                    <td class="p-3 text-center space-x-1">
+                        <button onclick="openEditStudentModal('${student.id}')" class="admin-only-btn text-indigo-600 hover:text-indigo-800 p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteStudent('${student.id}')" class="admin-only-btn text-red-600 hover:text-red-800 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.renderAdminClasses = function() {
+            const container = document.getElementById('classListContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            window.classesDB.forEach((c) => {
+                const count = window.studentsDB.filter(s => s.class === c.id && s.status === 'Active').length;
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center';
+                card.innerHTML = `
+                    <div>
+                        <div class="text-lg font-bold text-indigo-900">${c.name}</div>
+                        <div class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-user-tie mr-1"></i>班導師: ${c.teacher}</div>
+                        <div class="text-xs text-indigo-600 font-semibold mt-2">學生人數: ${count} 人</div>
+                    </div>
+                    <button onclick="deleteClass('${c.id}')" class="admin-only-btn text-red-400 hover:text-red-600 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                `;
+                container.appendChild(card);
+            });
+        };
+
+        window.filterAdminStudents = function() {
+            const query = document.getElementById('adminSearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#adminStudentTableBody tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        };
+
+        window.handleFileUpload = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('importFileName').textContent = file.name;
+            const reader = new FileReader();
+
+            reader.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+
+                window.importedTempData = json.map(row => ({
+                    id: String(row['學號'] || row['Student ID'] || row['id'] || ''),
+                    class: String(row['班別'] || row['Class'] || ''),
+                    seat: parseInt(row['座號'] || row['Seat'] || 0),
+                    name: String(row['中文姓名'] || row['Name'] || ''),
+                    nameEn: String(row['英文姓名'] || row['English Name'] || ''),
+                    status: 'Active'
+                }));
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        window.processImport = async function() {
+            if (window.currentRole !== 'Admin') {
+                showToast('無 Admin 權限執行此操作', 'error');
+                return;
+            }
+
+            if (window.importedTempData.length === 0) {
+                showToast('請先選擇有效的檔案！', 'error');
+                return;
+            }
+
+            const batch = writeBatch(db);
+            window.importedTempData.forEach(item => {
+                if (item.id && item.name) {
+                    batch.set(doc(studentsColl, item.id), item);
+                }
+            });
+
+            await batch.commit();
+            closeModal('importModal');
+            showToast(`批量匯入成功！共同步 ${window.importedTempData.length} 名學生至雲端。`, 'success');
+            window.importedTempData = [];
+        };
+
+        window.downloadCSVTemplate = function() {
+            const template = "學號,班別,座號,中文姓名,英文姓名\n2026101,1A,1,陳大文,Chan Tai Man\n2026102,1A,2,李小珠,Lee Siu Chu";
+            const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", "學生資料匯入範本.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        window.openAddStudentModal = function() {
+            if (window.currentRole !== 'Admin') return;
+            document.getElementById('studentModalTitle').textContent = '手動新增學生資料';
+            document.getElementById('mStudentIdx').value = '';
+            document.getElementById('studentForm').reset();
+            document.getElementById('studentModal').classList.remove('hidden');
+        };
+
+        window.openEditStudentModal = function(id) {
+            if (window.currentRole !== 'Admin') return;
+            const s = window.studentsDB.find(st => st.id === id);
+            if (!s) return;
+            document.getElementById('studentModalTitle').textContent = '修改學生資料';
+            document.getElementById('mStudentIdx').value = s.id;
+            document.getElementById('mStudentId').value = s.id;
+            document.getElementById('mStudentClass').value = s.class;
+            document.getElementById('mStudentSeat').value = s.seat;
+            document.getElementById('mStudentName').value = s.name;
+            document.getElementById('mStudentNameEn').value = s.nameEn || '';
+            document.getElementById('studentModal').classList.remove('hidden');
+        };
+
+        window.saveStudentModal = async function() {
+            const id = document.getElementById('mStudentId').value.trim();
+            const data = {
+                id: id,
+                class: document.getElementById('mStudentClass').value,
+                seat: parseInt(document.getElementById('mStudentSeat').value),
+                name: document.getElementById('mStudentName').value.trim(),
+                nameEn: document.getElementById('mStudentNameEn').value.trim(),
+                status: 'Active'
+            };
+
+            await setDoc(doc(studentsColl, id), data);
+            closeModal('studentModal');
+            showToast('學生資料同步儲存成功！', 'success');
+        };
+
+        window.deleteStudent = async function(id) {
+            if (window.currentRole !== 'Admin') return;
+            if (confirm('確定要刪除該位學生資料嗎？此操作將同時同步至所有裝置。')) {
+                await deleteDoc(doc(studentsColl, id));
+                showToast('學生資料已刪除', 'success');
+            }
+        };
+
+        window.openAddClassModal = async function() {
+            if (window.currentRole !== 'Admin') return;
+            const cName = prompt('請輸入新班別名稱 (如: 3A):');
+            if (cName) {
+                const tName = prompt('請輸入班導師姓名:') || '未指定';
+                const newClass = { id: cName, name: `${cName} 班`, teacher: tName };
+                await setDoc(doc(classesColl, cName), newClass);
+                showToast(`已新增班別 ${cName}`, 'success');
+            }
+        };
+
+        window.deleteClass = async function(id) {
+            if (window.currentRole !== 'Admin') return;
+            if (confirm('確定刪除此班別？刪除班別不會移除學生資料。')) {
+                await deleteDoc(doc(classesColl, id));
+                showToast('班別已成功刪除', 'success');
+            }
+        };
+
+        window.executePromotion = async function() {
+            if (window.currentRole !== 'Admin') {
+                showToast('僅 Admin 具備執行學年升級權限', 'error');
+                return;
+            }
+
+            if (!confirm('【警告】您確定要執行全校學年一鍵升級嗎？\n升級後 1A 將變更為 2A，歷史功課紀錄將歸檔結算。')) {
+                return;
+            }
+
+            const batch = writeBatch(db);
+            window.studentsDB.forEach(s => {
+                const gradeNum = parseInt(s.class.charAt(0));
+                const letter = s.class.slice(1);
+                if (!isNaN(gradeNum)) {
+                    if (gradeNum >= 6) {
+                        batch.update(doc(studentsColl, s.id), { status: 'Graduated' });
+                    } else {
+                        batch.update(doc(studentsColl, s.id), { class: `${gradeNum + 1}${letter}` });
+                    }
+                }
+            });
+
+            await batch.commit();
+            showToast('全校學年升級作業完成！已即時同步至雲端。', 'success');
+        };
+
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        };
+
+        window.openImportModal = function() {
+            if (window.currentRole !== 'Admin') return;
+            document.getElementById('importModal').classList.remove('hidden');
+        };
+
+        window.showToast = function(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            if (!toast || !toastMsg) return;
+
+            toastMsg.textContent = msg;
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-xmark text-red-400 text-lg';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            }
+
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        };
+
+        // 綁定鍵盤儲存事件 (Ctrl + S)
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                window.saveRegistration();
+            }
+        });
+
+        // 啟動應用程式
+        window.onload = function() {
+            const today = new Date().toISOString().split('T')[0];
+            const regDateEl = document.getElementById('regDate');
+            if (regDateEl) regDateEl.value = today;
+
+            const savedGasUrl = localStorage.getItem('gas_webhook_url') || DEFAULT_GAS_URL;
+            const gasUrlEl = document.getElementById('gasWebhookUrl');
+            if (gasUrlEl) gasUrlEl.value = savedGasUrl;
+
+            initApp();
+        };
+    </script>
 </body>
 </html>
