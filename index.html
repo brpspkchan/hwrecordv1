@@ -82,16 +82,16 @@
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">登記日期</label>
-                    <input type="date" id="regDate" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="date" id="regDate" onchange="onRegContextChange()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">班別</label>
-                    <select id="regClass" onchange="loadStudentGrid()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <select id="regClass" onchange="onRegContextChange()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">科目</label>
-                    <select id="regSubject" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <select id="regSubject" onchange="onRegContextChange()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                         <option value="中文">中國語文</option>
                         <option value="英文">英國語文</option>
                         <option value="數學">數學</option>
@@ -100,9 +100,12 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">作業名稱 / 項目</label>
-                    <div class="relative">
-                        <input type="text" id="regTaskName" list="commonTasks" placeholder="輸入或選擇作業名稱 (可留空)..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">作業項目 (可新增多項同科功課)</label>
+                    <div class="flex items-center space-x-1.5">
+                        <input type="text" id="regTaskInput" list="commonTasks" placeholder="輸入作業名稱..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <button type="button" onclick="addRegTaskItem()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap shadow-sm">
+                            <i class="fa-solid fa-plus mr-1"></i>加入項目
+                        </button>
                         <datalist id="commonTasks">
                             <option value="單元一工作紙">
                             <option value="習作簿 P.10-12">
@@ -110,6 +113,23 @@
                             <option value="隨堂小測驗">
                             <option value="專題報告提交">
                         </datalist>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 本次欲登記之功課標籤與今日已登記清單 -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-bold text-slate-600 mr-1"><i class="fa-solid fa-list-check text-indigo-600 mr-1"></i>準備登記之功課項目：</span>
+                    <div id="activeTaskChips" class="flex flex-wrap items-center gap-1.5">
+                        <!-- 動態產生標籤 -->
+                    </div>
+                </div>
+
+                <div id="todaySavedTasksArea" class="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                    <span class="font-bold text-emerald-700"><i class="fa-solid fa-circle-check mr-1"></i>今日該科已登記功課：</span>
+                    <div id="todaySavedTasksList" class="flex flex-wrap items-center gap-2">
+                        <!-- 動態顯示已儲存作業 -->
                     </div>
                 </div>
             </div>
@@ -136,11 +156,14 @@
                                 <th class="p-3 w-16 text-center">座號</th>
                                 <th class="p-3 w-36">學生姓名</th>
                                 <th class="p-3 w-36">出席狀態 (Attendance)</th>
-                                <th class="p-3 w-32 text-center">
-                                    <label class="inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllMissing(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
-                                        <span class="ml-2">全選欠交</span>
-                                    </label>
+                                <th class="p-3 min-w-[200px]">
+                                    <div class="flex items-center justify-between">
+                                        <span>欠交作業項目 (Check Missing)</span>
+                                        <label class="inline-flex items-center cursor-pointer text-indigo-700 lowercase font-normal text-xs">
+                                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllMissing(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5">
+                                            <span class="ml-1">全選</span>
+                                        </label>
+                                    </div>
                                 </th>
                                 <th class="p-3">備註 / 欠交說明</th>
                             </tr>
@@ -264,15 +287,15 @@
                 <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center space-x-2 text-emerald-900 w-full md:w-auto">
                         <i class="fa-solid fa-file-excel text-emerald-600 text-lg"></i>
-                        <span class="font-bold text-sm">Google 試算表同步設定 (Admin)：</span>
+                        <span class="font-bold text-sm">Google 試算表 Web App 同步網址 (需以 /exec 結尾)：</span>
                     </div>
                     <div class="flex-grow flex items-center space-x-2 w-full md:w-auto">
-                        <input type="text" id="gasWebhookUrl" value="https://script.google.com/macros/library/d/1ZXK3TPMOu2xlRCh1kULFZZo_K5SPKKrz1Huctb8NtPstWK69poWMCUmq/2" placeholder="貼上 Google Apps Script 網址" class="w-full border border-emerald-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-mono">
+                        <input type="text" id="gasWebhookUrl" value="https://script.google.com/macros/s/AKfycbxcFkr74hwj7UZj7Z0NH5AqGsqMf5e9xlA5gDRIgsZCHFd_yf6s6lHdOGR41dtm8sJq/exec" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full border border-emerald-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-mono">
                         <button onclick="saveGasUrl()" class="admin-only-btn bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shadow-sm">
                             儲存網址
                         </button>
                         <button onclick="openGasScriptModal()" class="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap">
-                            <i class="fa-solid fa-code mr-1"></i>查看 Apps Script 原始碼
+                            <i class="fa-solid fa-code mr-1"></i>查看完整部署教學
                         </button>
                     </div>
                 </div>
@@ -497,21 +520,31 @@
     <div id="gasScriptModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="font-bold text-lg text-slate-800">Google Apps Script 試算表設定指南</h3>
+                <h3 class="font-bold text-lg text-slate-800">Google Apps Script 試算表同步設定指南</h3>
                 <button onclick="closeModal('gasScriptModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-3 text-xs text-slate-600 max-h-[60vh] overflow-y-auto">
-                <p class="font-bold text-sm text-slate-800">設定步驟：</p>
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
+                    <p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>排查關鍵清單：</p>
+                    <ul class="list-disc pl-5 space-y-0.5">
+                        <li>網址必須以 <strong><code class="bg-white px-1 font-mono rounded">/exec</code></strong> 結尾，不能包含 <code class="bg-white px-1 font-mono rounded">/edit</code> 或 <code class="bg-white px-1 font-mono rounded">/library</code>。</li>
+                        <li>部署權限「誰可以存取」必須設定為 <strong>「所有人 (Anyone)」</strong>。</li>
+                        <li>每次修改 GAS 腳本後，必須點擊 <strong>「部署」$\rightarrow$「新建部署」</strong> 發布新版本。</li>
+                    </ul>
+                </div>
+
+                <p class="font-bold text-sm text-slate-800">正確設定步驟：</p>
                 <ol class="list-decimal pl-5 space-y-1">
                     <li>開啟您的 Google 試算表，點擊選單列的 <strong>「擴充功能」 $\rightarrow$ 「Apps Script」</strong>。</li>
                     <li>將以下程式碼貼入腳本編輯器中（覆蓋原始 `Code.gs` 的內容）。</li>
                     <li>點擊右上方 <strong>「部署」 $\rightarrow$ 「新建部署」</strong>。</li>
                     <li>種類選擇 <strong>「網頁應用程式 (Web App)」</strong>。</li>
                     <li>誰可以存取 (Who has access) 必須選擇：<strong>「所有人 (Anyone)」</strong>。</li>
-                    <li>完成部署後複製「網頁應用程式 URL」，並貼至 Admin 管理者後台的設定欄位中。</li>
+                    <li>點擊「部署」並授權存取後，複製產生的「網頁應用程式 URL」（需以 <code class="font-mono bg-slate-100 px-1">/exec</code> 結尾）。</li>
+                    <li>將複製的網址貼至 Admin 後台的輸入框中並點擊「儲存網址」。</li>
                 </ol>
 
-                <p class="font-bold text-sm text-slate-800 pt-2">Google Apps Script 原始碼 (僅寫入：班別、姓名、欠交日期)：</p>
+                <p class="font-bold text-sm text-slate-800 pt-2">Google Apps Script 原始碼：</p>
                 <div class="relative">
                     <pre id="gasCodeSnippet" class="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto select-all">
 function doPost(e) {
@@ -520,8 +553,8 @@ function doPost(e) {
     
     // 若工作表為空，自動建置表頭
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow(["班別", "姓名", "欠交日期"]);
-      sheet.getRange(1, 1, 1, 3).setFontWeight("bold").setBackground("#f3f4f6");
+      sheet.appendRow(["班別", "姓名", "欠交日期", "科目", "作業名稱"]);
+      sheet.getRange(1, 1, 1, 5).setFontWeight("bold").setBackground("#f3f4f6");
     }
     
     var data = JSON.parse(e.postData.contents);
@@ -529,7 +562,13 @@ function doPost(e) {
     // 批次寫入所有欠交學生紀錄
     if (Array.isArray(data) && data.length > 0) {
       data.forEach(function(row) {
-        sheet.appendRow([row.className, row.studentName, row.date]);
+        sheet.appendRow([
+          row.className || "-", 
+          row.studentName || "-", 
+          row.date || "-", 
+          row.subject || "-", 
+          row.taskName || "-"
+        ]);
       });
     }
     
@@ -560,8 +599,8 @@ function doPost(e) {
         // ==========================================
         // 1. 初始化預設種子資料與狀態變數
         // ==========================================
+        const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxcFkr74hwj7UZj7Z0NH5AqGsqMf5e9xlA5gDRIgsZCHFd_yf6s6lHdOGR41dtm8sJq/exec';
         let currentRole = 'Admin';
-        const DEFAULT_GAS_URL = 'https://script.google.com/macros/library/d/1ZXK3TPMOu2xlRCh1kULFZZo_K5SPKKrz1Huctb8NtPstWK69poWMCUmq/2';
 
         const SEED_CLASSES_DB = [
             { id: '1A', name: '1A 班', teacher: '王美麗 老師' },
@@ -624,7 +663,9 @@ function doPost(e) {
         let importedTempData = [];
         let currentInspectingClass = '';
 
-        // ==========================================
+        // 目前正在編輯/登記的作業項目陣列 (可多項)
+        let currentTaskList = ['單元一工作紙'];
+
         // 1.5 本機持久化儲存 (LocalStorage Manager)
         // ==========================================
         const STORAGE_KEY_CLASSES = 'school_system_classes_v2';
@@ -658,7 +699,6 @@ function doPost(e) {
                     studentsDB = JSON.parse(storedStudents);
                     homeworkLogsDB = storedLogs ? JSON.parse(storedLogs) : [];
                 } else {
-                    // 若初次使用，則載入預設種子資料並儲存
                     classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
                     studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
                     homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
@@ -719,10 +759,11 @@ function doPost(e) {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('regDate').value = today;
 
-            const savedGasUrl = localStorage.getItem('gas_webhook_url');
-            document.getElementById('gasWebhookUrl').value = savedGasUrl || DEFAULT_GAS_URL;
+            const savedGasUrl = localStorage.getItem('gas_webhook_url') || DEFAULT_GAS_URL;
+            document.getElementById('gasWebhookUrl').value = savedGasUrl;
 
             populateClassSelects();
+            renderActiveTaskChips();
             loadStudentGrid();
             renderReportTable();
             renderAdminStudents();
@@ -745,25 +786,22 @@ function doPost(e) {
             });
 
             document.getElementById(`view-${tabName}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`tab-${tabName}`);
-            activeBtn.classList.add('border-indigo-600', 'text-indigo-600');
-            activeBtn.classList.remove('border-transparent', 'text-slate-600');
-
-            if (tabName === 'reports') renderReportTable();
+            const activeTabBtn = document.getElementById(`tab-${tabName}`);
+            activeTabBtn.classList.remove('border-transparent', 'text-slate-600');
+            activeTabBtn.classList.add('border-indigo-600', 'text-indigo-600');
         }
 
-        function switchAdminSubTab(subTabName) {
+        function switchAdminSubTab(subName) {
             document.querySelectorAll('#view-admin > div[id^="adminSub-"]').forEach(div => div.classList.add('hidden'));
             document.querySelectorAll('.admin-subtab-btn').forEach(btn => {
                 btn.classList.remove('bg-indigo-50', 'text-indigo-600');
                 btn.classList.add('text-slate-600');
             });
 
-            document.getElementById(`adminSub-${subTabName}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`adminTab-${subTabName}`);
+            document.getElementById(`adminSub-${subName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`adminTab-${subName}`);
             activeBtn.classList.add('bg-indigo-50', 'text-indigo-600');
-
-            if (subTabName === 'storage') renderVirtualStorageBuckets();
+            activeBtn.classList.remove('text-slate-600');
         }
 
         function changeRole(role) {
@@ -771,29 +809,391 @@ function doPost(e) {
             const userInfo = document.getElementById('userInfo');
             const adminWarning = document.getElementById('adminAccessWarning');
 
-            if (role === 'Teacher') {
-                userInfo.textContent = '任課教師 (限課目登記與報表)';
-                adminWarning.classList.remove('hidden');
-            } else if (role === 'FormTeacher') {
-                userInfo.textContent = '班導師 - 1A 班 (1A 班權限)';
-                adminWarning.classList.remove('hidden');
-            } else {
+            if (role === 'Admin') {
                 userInfo.textContent = '系統管理員 (全校權限)';
-                adminWarning.classList.add('hidden');
+                if (adminWarning) adminWarning.classList.add('hidden');
+            } else if (role === 'FormTeacher') {
+                userInfo.textContent = '班導師 (1A 班權限)';
+                if (adminWarning) adminWarning.classList.remove('hidden');
+            } else {
+                userInfo.textContent = '任課教師 (登錄權限)';
+                if (adminWarning) adminWarning.classList.remove('hidden');
             }
-
-            const adminOnlyElements = document.querySelectorAll('.admin-only-btn');
-            adminOnlyElements.forEach(el => {
-                if (role !== 'Admin') {
-                    el.classList.add('opacity-50', 'pointer-events-none');
-                } else {
-                    el.classList.remove('opacity-50', 'pointer-events-none');
-                }
-            });
 
             populateClassSelects();
             loadStudentGrid();
+        }
+
+        function onRegContextChange() {
+            renderTodayRegisteredTasksSummary();
+            loadStudentGrid();
+        }
+
+        function addRegTaskItem() {
+            const input = document.getElementById('regTaskInput');
+            const val = input.value.trim();
+            if (!val) {
+                showToast('請輸入作業名稱', 'error');
+                return;
+            }
+
+            if (!currentTaskList.includes(val)) {
+                currentTaskList.push(val);
+                input.value = '';
+                renderActiveTaskChips();
+                loadStudentGrid();
+            } else {
+                showToast('該作業項目已在準備清單中', 'error');
+            }
+        }
+
+        function removeRegTaskItem(taskName) {
+            if (currentTaskList.length <= 1) {
+                showToast('至少需保留一項作業項目', 'error');
+                return;
+            }
+            currentTaskList = currentTaskList.filter(t => t !== taskName);
+            renderActiveTaskChips();
+            loadStudentGrid();
+        }
+
+        function renderActiveTaskChips() {
+            const container = document.getElementById('activeTaskChips');
+            container.innerHTML = '';
+
+            currentTaskList.forEach((task) => {
+                const chip = document.createElement('span');
+                chip.className = 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200';
+                chip.innerHTML = `
+                    <span>${task}</span>
+                    <button onclick="removeRegTaskItem('${task}')" class="ml-1.5 text-indigo-500 hover:text-indigo-800 focus:outline-none"><i class="fa-solid fa-xmark"></i></button>
+                `;
+                container.appendChild(chip);
+            });
+        }
+
+        function renderTodayRegisteredTasksSummary() {
+            const regDate = document.getElementById('regDate').value;
+            const regClass = document.getElementById('regClass').value;
+            const regSubject = document.getElementById('regSubject').value;
+            const container = document.getElementById('todaySavedTasksList');
+            container.innerHTML = '';
+
+            const savedTasks = Array.from(new Set(
+                homeworkLogsDB
+                    .filter(l => l.date === regDate && l.class === regClass && l.subject === regSubject)
+                    .map(l => l.taskName)
+            ));
+
+            if (savedTasks.length === 0) {
+                container.innerHTML = `<span class="text-slate-400 italic">尚無登記紀錄</span>`;
+                return;
+            }
+
+            savedTasks.forEach(task => {
+                const missingCount = homeworkLogsDB.filter(l => l.date === regDate && l.class === regClass && l.subject === regSubject && l.taskName === task && l.isMissing).length;
+                const badge = document.createElement('span');
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-medium';
+                badge.innerHTML = `
+                    <span>${task} (欠交: ${missingCount}人)</span>
+                    <button onclick="deleteRegisteredTaskLog('${regDate}', '${regClass}', '${regSubject}', '${task}')" title="刪除此項紀錄" class="ml-1.5 text-emerald-600 hover:text-red-600"><i class="fa-solid fa-trash-can"></i></button>
+                `;
+                container.appendChild(badge);
+            });
+        }
+
+        function deleteRegisteredTaskLog(date, className, subject, taskName) {
+            if (confirm(`確定要刪除 [${date} ${className} ${subject} - ${taskName}] 的登記紀錄嗎？`)) {
+                homeworkLogsDB = homeworkLogsDB.filter(l => !(l.date === date && l.class === className && l.subject === subject && l.taskName === taskName));
+                saveAllToLocalStorage();
+                renderTodayRegisteredTasksSummary();
+                renderReportTable();
+                showToast(`已刪除 ${taskName} 之登記紀錄`, 'success');
+            }
+        }
+
+        // ==========================================
+        // 3. Data Grid 快速登記
+        // ==========================================
+        function loadStudentGrid() {
+            const selectedClass = document.getElementById('regClass').value;
+            const gridBody = document.getElementById('studentGridBody');
+            gridBody.innerHTML = '';
+
+            renderTodayRegisteredTasksSummary();
+
+            const filteredStudents = studentsDB
+                .filter(s => s.class === selectedClass && s.status === 'Active')
+                .sort((a, b) => a.seat - b.seat);
+
+            document.getElementById('gridStudentCount').textContent = filteredStudents.length;
+
+            if (filteredStudents.length === 0) {
+                gridBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400">此班別目前尚無學生資料</td></tr>`;
+                updateGridStats();
+                return;
+            }
+
+            filteredStudents.forEach((student, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition grid-row';
+                tr.setAttribute('data-index', index);
+
+                let taskCheckboxesHtml = '<div class="flex flex-wrap gap-3 items-center">';
+                currentTaskList.forEach((task, tIdx) => {
+                    taskCheckboxesHtml += `
+                        <label class="inline-flex items-center space-x-1 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded border border-slate-200">
+                            <input type="checkbox" id="chk_${index}_${tIdx}" onchange="updateRowState(${index})" class="missing-checkbox rounded text-red-600 focus:ring-red-500 h-4 w-4 cursor-pointer">
+                            <span class="text-xs font-medium text-slate-700">${task}</span>
+                        </label>
+                    `;
+                });
+                taskCheckboxesHtml += '</div>';
+
+                tr.innerHTML = `
+                    <td class="p-3 text-center font-mono font-bold text-slate-600">${String(student.seat).padStart(2, '0')}</td>
+                    <td class="p-3 font-semibold text-slate-800">
+                        ${student.name}
+                        <span class="block text-xs text-slate-400 font-normal">${student.nameEn || ''}</span>
+                    </td>
+                    <td class="p-3">
+                        <select onchange="handleAttendanceChange(${index}, this.value)" class="attendance-select border border-slate-300 rounded px-2 py-1 text-xs focus:ring-2 focus:ring-indigo-500">
+                            <option value="Present" selected>出席</option>
+                            <option value="Sick_Leave">病假</option>
+                            <option value="Personal_Leave">事假</option>
+                            <option value="Official_Leave">公假</option>
+                            <option value="Absence">無故缺席</option>
+                        </select>
+                    </td>
+                    <td class="p-3">
+                        ${taskCheckboxesHtml}
+                    </td>
+                    <td class="p-3">
+                        <input type="text" id="remark_${index}" placeholder="備註或欠交理由..." class="remark-input w-full border border-slate-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500">
+                    </td>
+                `;
+
+                tr.addEventListener('keydown', (e) => handleGridKeyDown(e, index));
+                gridBody.appendChild(tr);
+            });
+
+            updateGridStats();
+        }
+
+        function handleAttendanceChange(index, value) {
+            const remark = document.getElementById(`remark_${index}`);
+            const select = document.querySelectorAll('.attendance-select')[index];
+
+            currentTaskList.forEach((_, tIdx) => {
+                const chk = document.getElementById(`chk_${index}_${tIdx}`);
+                if (chk) {
+                    if (value !== 'Present') {
+                        chk.checked = false;
+                        chk.disabled = true;
+                    } else {
+                        chk.disabled = false;
+                    }
+                }
+            });
+
+            if (value !== 'Present') {
+                remark.disabled = true;
+                remark.value = `[${getAttendanceText(value)} - 不計欠交]`;
+                select.classList.add('text-red-600', 'font-bold');
+            } else {
+                remark.disabled = false;
+                if (remark.value.includes('不計欠交')) remark.value = '';
+                select.classList.remove('text-red-600', 'font-bold');
+            }
+            updateRowState(index);
+            updateGridStats();
+        }
+
+        function getAttendanceText(type) {
+            const map = { 'Sick_Leave': '病假', 'Personal_Leave': '事假', 'Official_Leave': '公假', 'Absence': '無故缺席' };
+            return map[type] || '缺席';
+        }
+
+        function updateRowState(index) {
+            const rows = document.querySelectorAll('#studentGridBody tr');
+            let isAnyMissing = false;
+            currentTaskList.forEach((_, tIdx) => {
+                const chk = document.getElementById(`chk_${index}_${tIdx}`);
+                if (chk && chk.checked) isAnyMissing = true;
+            });
+
+            if (rows[index]) {
+                if (isAnyMissing) {
+                    rows[index].classList.add('bg-red-50');
+                } else {
+                    rows[index].classList.remove('bg-red-50');
+                }
+            }
+            updateGridStats();
+        }
+
+        function handleGridKeyDown(e, currentIndex) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const nextRow = document.querySelectorAll('#studentGridBody tr')[currentIndex + 1];
+                if (nextRow) focusRow(nextRow);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prevRow = document.querySelectorAll('#studentGridBody tr')[currentIndex - 1];
+                if (prevRow) focusRow(prevRow);
+            }
+        }
+
+        function focusRow(rowElement) {
+            document.querySelectorAll('#studentGridBody tr').forEach(r => r.classList.remove('row-selected'));
+            rowElement.classList.add('row-selected');
+            const chk = rowElement.querySelector('.missing-checkbox');
+            if (chk) chk.focus();
+        }
+
+        function toggleSelectAllMissing(checked) {
+            const rows = document.querySelectorAll('#studentGridBody tr');
+            rows.forEach((r, idx) => {
+                currentTaskList.forEach((_, tIdx) => {
+                    const chk = document.getElementById(`chk_${idx}_${tIdx}`);
+                    if (chk && !chk.disabled) {
+                        chk.checked = checked;
+                    }
+                });
+                updateRowState(idx);
+            });
+            updateGridStats();
+        }
+
+        function toggleAllMissing(status) {
+            document.getElementById('selectAllCheckbox').checked = status;
+            toggleSelectAllMissing(status);
+        }
+
+        function updateGridStats() {
+            const rows = document.querySelectorAll('#studentGridBody tr');
+            let presentOk = 0;
+            let missing = 0;
+            let absent = 0;
+
+            rows.forEach((r, idx) => {
+                const attSelect = r.querySelector('.attendance-select');
+                if (!attSelect) return;
+
+                if (attSelect.value !== 'Present') {
+                    absent++;
+                } else {
+                    let studentHasMissing = false;
+                    currentTaskList.forEach((_, tIdx) => {
+                        const chk = document.getElementById(`chk_${idx}_${tIdx}`);
+                        if (chk && chk.checked) studentHasMissing = true;
+                    });
+
+                    if (studentHasMissing) {
+                        missing++;
+                    } else {
+                        presentOk++;
+                    }
+                }
+            });
+
+            document.getElementById('statPresentOk').textContent = presentOk;
+            document.getElementById('statMissing').textContent = missing;
+            document.getElementById('statAbsent').textContent = absent;
+        }
+
+        function saveRegistration() {
+            const regDate = document.getElementById('regDate').value;
+            const regClass = document.getElementById('regClass').value;
+            const regSubject = document.getElementById('regSubject').value;
+
+            if (currentTaskList.length === 0) {
+                showToast('請至少指定一項作業名稱', 'error');
+                return;
+            }
+
+            const currentStudents = studentsDB.filter(s => s.class === regClass && s.status === 'Active').sort((a,b)=>a.seat-b.seat);
+            let addedCount = 0;
+            let missingToSync = [];
+
+            currentStudents.forEach((student, idx) => {
+                const attSelect = document.querySelectorAll('.attendance-select')[idx];
+                const remark = document.getElementById(`remark_${idx}`);
+
+                if (attSelect) {
+                    const attendance = attSelect.value;
+
+                    currentTaskList.forEach((taskName, tIdx) => {
+                        const chk = document.getElementById(`chk_${idx}_${tIdx}`);
+                        const isMissing = chk ? chk.checked : false;
+
+                        homeworkLogsDB.push({
+                            date: regDate,
+                            class: regClass,
+                            subject: regSubject,
+                            taskName: taskName,
+                            studentName: student.name,
+                            attendance: attendance,
+                            isMissing: isMissing,
+                            remark: remark ? remark.value : ''
+                        });
+                        addedCount++;
+
+                        if (attendance === 'Present' && isMissing) {
+                            missingToSync.push({
+                                className: regClass,
+                                studentName: student.name,
+                                date: regDate,
+                                subject: regSubject,
+                                taskName: taskName
+                            });
+                        }
+                    });
+                }
+            });
+
+            saveAllToLocalStorage();
+            showToast(`已成功儲存 ${currentTaskList.length} 項作業 (共 ${addedCount} 筆學生紀錄)！`, 'success');
+
+            const gasUrl = localStorage.getItem('gas_webhook_url') || DEFAULT_GAS_URL;
+            if (gasUrl && missingToSync.length > 0) {
+                syncToGoogleSheets(gasUrl, missingToSync);
+            }
+
+            renderTodayRegisteredTasksSummary();
             renderReportTable();
+        }
+
+        // 核心同步至 Google 試算表邏輯 (修復網址驗證與 CORS 預檢限制)
+        function syncToGoogleSheets(url, dataPayload) {
+            if (!url || !url.trim()) {
+                showToast('尚未設定同步網址，跳過試算表同步。', 'error');
+                return;
+            }
+
+            const trimmedUrl = url.trim();
+
+            if (!trimmedUrl.includes('/exec')) {
+                showToast('同步失敗：Web App 網址必須以 /exec 結尾！', 'error');
+                return;
+            }
+
+            showToast('正同步寫入至 Google 試算表...', 'success');
+            
+            // 使用 text/plain 避免觸發跨域預檢 (CORS Preflight Options Request)
+            fetch(trimmedUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(dataPayload)
+            })
+            .then(() => {
+                showToast(`成功發送 ${dataPayload.length} 筆欠交紀錄至 Google 試算表！`, 'success');
+            })
+            .catch(err => {
+                console.error('Google Sheets Sync Error:', err);
+                showToast('試算表同步失敗，請檢查網路連線或 Apps Script 網址！', 'error');
+            });
         }
 
         function populateClassSelects() {
@@ -820,6 +1220,10 @@ function doPost(e) {
                 return;
             }
             const url = document.getElementById('gasWebhookUrl').value.trim();
+            if (url && !url.includes('/exec')) {
+                showToast('警告：格式不正確！Apps Script 網址必須以 /exec 結尾。', 'error');
+                return;
+            }
             localStorage.setItem('gas_webhook_url', url);
             showToast('Google 試算表同步網址已成功儲存！', 'success');
         }
@@ -829,255 +1233,14 @@ function doPost(e) {
         }
 
         // ==========================================
-        // 3. Data Grid 快速登記 (核心邏輯)
-        // ==========================================
-        function loadStudentGrid() {
-            const selectedClass = document.getElementById('regClass').value;
-            const gridBody = document.getElementById('studentGridBody');
-            gridBody.innerHTML = '';
-
-            const filteredStudents = studentsDB
-                .filter(s => s.class === selectedClass && s.status === 'Active')
-                .sort((a, b) => a.seat - b.seat);
-
-            document.getElementById('gridStudentCount').textContent = filteredStudents.length;
-
-            if (filteredStudents.length === 0) {
-                gridBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400">此班別目前尚無學生資料</td></tr>`;
-                updateGridStats();
-                return;
-            }
-
-            filteredStudents.forEach((student, index) => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 transition grid-row';
-                tr.setAttribute('data-index', index);
-
-                tr.innerHTML = `
-                    <td class="p-3 text-center font-mono font-bold text-slate-600">${String(student.seat).padStart(2, '0')}</td>
-                    <td class="p-3 font-semibold text-slate-800">
-                        ${student.name}
-                        <span class="block text-xs text-slate-400 font-normal">${student.nameEn || ''}</span>
-                    </td>
-                    <td class="p-3">
-                        <select onchange="handleAttendanceChange(${index}, this.value)" class="attendance-select border border-slate-300 rounded px-2 py-1 text-xs focus:ring-2 focus:ring-indigo-500">
-                            <option value="Present" selected>出席</option>
-                            <option value="Sick_Leave">病假</option>
-                            <option value="Personal_Leave">事假</option>
-                            <option value="Official_Leave">公假</option>
-                            <option value="Absence">無故缺席</option>
-                        </select>
-                    </td>
-                    <td class="p-3 text-center">
-                        <input type="checkbox" id="chk_${index}" onchange="updateRowState(${index})" class="missing-checkbox rounded text-red-600 focus:ring-red-500 h-5 w-5 cursor-pointer">
-                    </td>
-                    <td class="p-3">
-                        <input type="text" id="remark_${index}" placeholder="備註或欠交理由..." class="remark-input w-full border border-slate-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500">
-                    </td>
-                `;
-
-                tr.addEventListener('keydown', (e) => handleGridKeyDown(e, index));
-                gridBody.appendChild(tr);
-            });
-
-            updateGridStats();
-        }
-
-        function handleAttendanceChange(index, value) {
-            const chk = document.getElementById(`chk_${index}`);
-            const remark = document.getElementById(`remark_${index}`);
-            const select = document.querySelectorAll('.attendance-select')[index];
-
-            if (value !== 'Present') {
-                chk.checked = false;
-                chk.disabled = true;
-                remark.disabled = true;
-                remark.value = `[${getAttendanceText(value)} - 不計欠交]`;
-                select.classList.add('text-red-600', 'font-bold');
-            } else {
-                chk.disabled = false;
-                remark.disabled = false;
-                if (remark.value.includes('不計欠交')) remark.value = '';
-                select.classList.remove('text-red-600', 'font-bold');
-            }
-            updateRowState(index);
-            updateGridStats();
-        }
-
-        function getAttendanceText(type) {
-            const map = { 'Sick_Leave': '病假', 'Personal_Leave': '事假', 'Official_Leave': '公假', 'Absence': '無故缺席' };
-            return map[type] || '缺席';
-        }
-
-        function updateRowState(index) {
-            const rows = document.querySelectorAll('#studentGridBody tr');
-            const chk = document.getElementById(`chk_${index}`);
-            if (rows[index]) {
-                if (chk.checked) {
-                    rows[index].classList.add('bg-red-50');
-                } else {
-                    rows[index].classList.remove('bg-red-50');
-                }
-            }
-            updateGridStats();
-        }
-
-        function handleGridKeyDown(e, currentIndex) {
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                const nextRow = document.querySelectorAll('#studentGridBody tr')[currentIndex + 1];
-                if (nextRow) focusRow(nextRow);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                const prevRow = document.querySelectorAll('#studentGridBody tr')[currentIndex - 1];
-                if (prevRow) focusRow(prevRow);
-            } else if (e.key === ' ' || e.code === 'Space') {
-                if (document.activeElement.tagName !== 'INPUT' || document.activeElement.type === 'checkbox') {
-                    e.preventDefault();
-                    const chk = document.getElementById(`chk_${currentIndex}`);
-                    if (!chk.disabled) {
-                        chk.checked = !chk.checked;
-                        updateRowState(currentIndex);
-                    }
-                }
-            }
-        }
-
-        function focusRow(rowElement) {
-            document.querySelectorAll('#studentGridBody tr').forEach(r => r.classList.remove('row-selected'));
-            rowElement.classList.add('row-selected');
-            const chk = rowElement.querySelector('.missing-checkbox');
-            if (chk) chk.focus();
-        }
-
-        function toggleSelectAllMissing(checked) {
-            const checkboxes = document.querySelectorAll('.missing-checkbox');
-            checkboxes.forEach((chk, idx) => {
-                if (!chk.disabled) {
-                    chk.checked = checked;
-                    updateRowState(idx);
-                }
-            });
-            updateGridStats();
-        }
-
-        function toggleAllMissing(status) {
-            document.getElementById('selectAllCheckbox').checked = status;
-            toggleSelectAllMissing(status);
-        }
-
-        function updateGridStats() {
-            const rows = document.querySelectorAll('#studentGridBody tr');
-            let presentOk = 0;
-            let missing = 0;
-            let absent = 0;
-
-            rows.forEach((r, idx) => {
-                const attSelect = r.querySelector('.attendance-select');
-                const chk = document.getElementById(`chk_${idx}`);
-                if (!attSelect) return;
-
-                if (attSelect.value !== 'Present') {
-                    absent++;
-                } else if (chk && chk.checked) {
-                    missing++;
-                } else {
-                    presentOk++;
-                }
-            });
-
-            document.getElementById('statPresentOk').textContent = presentOk;
-            document.getElementById('statMissing').textContent = missing;
-            document.getElementById('statAbsent').textContent = absent;
-        }
-
-        function saveRegistration() {
-            const regDate = document.getElementById('regDate').value;
-            const regClass = document.getElementById('regClass').value;
-            const regSubject = document.getElementById('regSubject').value;
-            let regTaskName = document.getElementById('regTaskName').value.trim();
-
-            if (!regTaskName) {
-                regTaskName = '-';
-            }
-
-            const currentStudents = studentsDB.filter(s => s.class === regClass && s.status === 'Active').sort((a,b)=>a.seat-b.seat);
-            let addedCount = 0;
-            let missingToSync = [];
-
-            currentStudents.forEach((student, idx) => {
-                const attSelect = document.querySelectorAll('.attendance-select')[idx];
-                const chk = document.getElementById(`chk_${idx}`);
-                const remark = document.getElementById(`remark_${idx}`);
-
-                if (attSelect) {
-                    const isMissing = chk.checked;
-                    const attendance = attSelect.value;
-
-                    homeworkLogsDB.push({
-                        date: regDate,
-                        class: regClass,
-                        subject: regSubject,
-                        taskName: regTaskName,
-                        studentName: student.name,
-                        attendance: attendance,
-                        isMissing: isMissing,
-                        remark: remark.value
-                    });
-                    addedCount++;
-
-                    if (attendance === 'Present' && isMissing) {
-                        missingToSync.push({
-                            className: regClass,
-                            studentName: student.name,
-                            date: regDate
-                        });
-                    }
-                }
-            });
-
-            // 存入長期 LocalStorage
-            saveAllToLocalStorage();
-
-            showToast(`已成功儲存 ${addedCount} 筆登記紀錄並寫入長期資料庫！`, 'success');
-
-            const gasUrl = localStorage.getItem('gas_webhook_url') || DEFAULT_GAS_URL;
-            if (gasUrl && missingToSync.length > 0) {
-                syncToGoogleSheets(gasUrl, missingToSync);
-            }
-
-            renderReportTable();
-        }
-
-        function syncToGoogleSheets(url, dataPayload) {
-            showToast('正同步寫入至 Google 試算表...', 'success');
-            
-            fetch(url, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dataPayload)
-            })
-            .then(() => {
-                showToast(`成功同步 ${dataPayload.length} 筆欠交紀錄至 Google 試算表！`, 'success');
-            })
-            .catch(err => {
-                console.error('Google Sheets Sync Error:', err);
-                showToast('試算表同步失敗，請檢查 Apps Script 網址。', 'error');
-            });
-        }
-
-        // ==========================================
-        // 4. 原生萬能 CSV 解析邏輯 (防亂碼核心)
+        // 4. 原生萬能 CSV 解析邏輯
         // ==========================================
         function parseCSVText(csvText) {
             if (!csvText) return [];
-            // 清除 UTF-8 BOM
             if (csvText.charCodeAt(0) === 0xFEFF) {
                 csvText = csvText.slice(1);
             }
 
-            // 自動判斷分隔符 (逗號 / 分號 / Tab)
             let delimiter = ',';
             const firstLine = csvText.split(/\r\n|\n|\r/)[0] || '';
             if (firstLine.includes('\t') && !firstLine.includes(',')) delimiter = '\t';
@@ -1284,7 +1447,6 @@ function doPost(e) {
             });
         }
 
-        // CSV/Excel 檔案選取與解析 (相容多種解碼)
         function handleFileUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -1302,15 +1464,12 @@ function doPost(e) {
 
                     if (isCSV) {
                         let text = '';
-                        // 1. 判別 UTF-8 BOM
                         if (data.length >= 3 && data[0] === 0xEF && data[1] === 0xBB && data[2] === 0xBF) {
                             text = new TextDecoder('utf-8').decode(data.subarray(3));
                         } else {
                             try {
-                                // 2. 嘗試 Strict UTF-8 解碼
                                 text = new TextDecoder('utf-8', { fatal: true }).decode(data);
                             } catch (utfErr) {
-                                // 3. 捕捉無效 UTF-8，自動轉為 Big5 繁體中文解碼
                                 text = new TextDecoder('big5').decode(data);
                             }
                         }
@@ -1398,7 +1557,6 @@ function doPost(e) {
                 addedCount++;
             });
 
-            // 關鍵修改：匯入成功後儲存至長期記憶庫 LocalStorage
             saveAllToLocalStorage();
 
             populateClassSelects();
@@ -1426,7 +1584,6 @@ function doPost(e) {
             document.body.removeChild(link);
         }
 
-        // 虛擬獨立儲存空間渲染
         function renderVirtualStorageBuckets() {
             const container = document.getElementById('virtualStorageContainer');
             if (!container) return;
@@ -1483,8 +1640,6 @@ function doPost(e) {
                 if (!Array.isArray(updated)) throw new Error('格式必須為 Array 陣列');
 
                 studentsDB = studentsDB.filter(s => s.class !== currentInspectingClass).concat(updated);
-                
-                // 存入長期儲存
                 saveAllToLocalStorage();
 
                 renderAdminStudents();
@@ -1531,7 +1686,6 @@ function doPost(e) {
             document.body.removeChild(link);
         }
 
-        // Student Modal CRUD
         function openAddStudentModal() {
             if (currentRole !== 'Admin') return;
             document.getElementById('studentModalTitle').textContent = '手動新增學生資料';
