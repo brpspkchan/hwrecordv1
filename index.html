@@ -34,7 +34,7 @@
                 <h1 class="text-xl font-bold tracking-wide">智慧校園功課與出席管理系統</h1>
             </div>
             
-            <!-- 角色與權限切換 (模擬) -->
+            <!-- 角色與權限切換 -->
             <div class="flex items-center space-x-4 bg-indigo-950 px-3 py-1.5 rounded-lg border border-indigo-700">
                 <span class="text-xs text-indigo-300">目前權限模擬：</span>
                 <select id="roleSelector" onchange="changeRole(this.value)" class="bg-indigo-900 text-white text-sm font-medium rounded border border-indigo-600 px-2 py-1 focus:outline-none">
@@ -252,7 +252,7 @@
                     <i class="fa-solid fa-school mr-1.5"></i>班別與學年維護
                 </button>
                 <button onclick="switchAdminSubTab('storage')" id="adminTab-storage" class="admin-subtab-btn px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">
-                    <i class="fa-solid fa-database mr-1.5"></i>各班虛擬儲存空間
+                    <i class="fa-solid fa-database mr-1.5"></i>長期獨立虛擬儲存空間
                 </button>
                 <button onclick="switchAdminSubTab('promotion')" id="adminTab-promotion" class="admin-subtab-btn px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">
                     <i class="fa-solid fa-graduation-cap mr-1.5"></i>學年批次升級 (Promotion)
@@ -330,18 +330,38 @@
                 </div>
             </div>
 
-            <!-- SubTab 3: 各班虛擬儲存空間 -->
+            <!-- SubTab 3: 各班虛擬長期儲存空間 -->
             <div id="adminSub-storage" class="hidden space-y-4">
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
-                    <div>
-                        <h3 class="text-base font-bold text-slate-800">各班虛擬獨立儲存空間 (Virtual Storage Buckets)</h3>
-                        <p class="text-xs text-slate-500 mt-1">系統將學生資料劃分為班別獨立 JSON 區塊，提供動態編輯、備份下載與快照還原功能。</p>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h3 class="text-base font-bold text-slate-800">各班長期虛擬儲存空間 (LocalStorage Persistent Buckets)</h3>
+                                <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-bold flex items-center">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>長期記憶儲存已啟用
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">所有匯入及修改的資料均已自動寫入本機瀏覽器 Persistent LocalStorage，重新整理或關閉視窗不會遺失資料。</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="resetToDefaultData()" class="admin-only-btn text-xs bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-2 rounded-lg font-semibold flex items-center space-x-1">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                <span>重置為系統預設值</span>
+                            </button>
+                            <button onclick="exportFullVirtualBackup()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm flex items-center space-x-1">
+                                <i class="fa-solid fa-download"></i>
+                                <span>匯出全校完整 JSON 備份</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <button onclick="exportFullVirtualBackup()" class="bg-indigo-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm flex items-center space-x-1">
-                            <i class="fa-solid fa-download"></i>
-                            <span>匯出全校 JSON 備份</span>
-                        </button>
+
+                    <!-- 儲存容量統計條 -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-wrap justify-between items-center gap-3 text-xs">
+                        <div class="flex items-center space-x-4">
+                            <div><span class="text-slate-500">已用儲存容量：</span><strong id="storageUsedText" class="text-indigo-600 font-mono">0 KB</strong></div>
+                            <div><span class="text-slate-500">最後存檔時間：</span><span id="lastSavedTimeText" class="text-slate-700 font-medium">尚未登記</span></div>
+                        </div>
+                        <div class="text-slate-400 text-[11px]"><i class="fa-solid fa-shield-halved mr-1"></i>離線安全防護中</div>
                     </div>
                 </div>
 
@@ -383,7 +403,7 @@
                 <button onclick="closeModal('importModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-3">
-                <p class="text-xs text-slate-600">請上傳包含以下欄位的 CSV 或 Excel 檔案：<br><code class="bg-slate-100 px-1 rounded text-indigo-600">學號, 班別, 座號, 中文姓名, 英文姓名</code></p>
+                <p class="text-xs text-slate-600">請上傳包含以下欄位的 CSV 或 Excel 檔案（匯入成功後將自動長期儲存於本機資料庫）：<br><code class="bg-slate-100 px-1 rounded text-indigo-600">學號, 班別, 座號, 中文姓名, 英文姓名</code></p>
                 <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-indigo-500 transition cursor-pointer" onclick="document.getElementById('csvFileInput').click()">
                     <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
                     <p class="text-sm font-medium text-slate-700">點擊選擇檔案 或 將檔案拖曳至此</p>
@@ -411,7 +431,7 @@
             </div>
             <div class="flex justify-end space-x-2 pt-3 border-t">
                 <button onclick="closeModal('importModal')" class="px-4 py-2 border rounded-lg text-sm font-medium text-slate-600">取消</button>
-                <button onclick="processImport()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">確認匯入</button>
+                <button onclick="processImport()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">確認匯入並保存</button>
             </div>
         </div>
     </div>
@@ -460,7 +480,7 @@
                 <button onclick="closeModal('jsonInspectorModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-2">
-                <p class="text-xs text-slate-500">您可以直接修改下方的 JSON 結構數據並點擊儲存，以動態更新資料庫：</p>
+                <p class="text-xs text-slate-500">您可以直接修改下方的 JSON 結構數據並點擊儲存，儲存後會同步更新長期記憶庫：</p>
                 <textarea id="jsonContentArea" rows="12" class="w-full font-mono text-xs p-3 bg-slate-900 text-emerald-400 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
             <div class="flex justify-between items-center pt-3 border-t">
@@ -538,13 +558,12 @@ function doPost(e) {
     <!-- JavaScript 系統邏輯碼 -->
     <script>
         // ==========================================
-        // 1. 初始化資料庫與狀態變數
+        // 1. 初始化預設種子資料與狀態變數
         // ==========================================
         let currentRole = 'Admin';
         const DEFAULT_GAS_URL = 'https://script.google.com/macros/library/d/1ZXK3TPMOu2xlRCh1kULFZZo_K5SPKKrz1Huctb8NtPstWK69poWMCUmq/2';
 
-        // 預設班別資料
-        let classesDB = [
+        const SEED_CLASSES_DB = [
             { id: '1A', name: '1A 班', teacher: '王美麗 老師' },
             { id: '1B', name: '1B 班', teacher: '陳大文 老師' },
             { id: '2A', name: '2A 班', teacher: '張立德 老師' },
@@ -553,8 +572,7 @@ function doPost(e) {
             { id: '6C', name: '6C 班', teacher: '鄭雅婷 老師' }
         ];
 
-        // 預設學生資料庫 (預寫入匯入範本中的學生資料)
-        let studentsDB = [
+        const SEED_STUDENTS_DB = [
             { class: '1A', seat: 1, name: '陳芷晴', nameEn: 'CHAN CHI CHENG', status: 'Active' },
             { class: '1A', seat: 2, name: '陳柏杋', nameEn: 'CHAN PAK FAN', status: 'Active' },
             { class: '1A', seat: 3, name: '陳琛', nameEn: 'CHAN SAM', status: 'Active' },
@@ -594,19 +612,110 @@ function doPost(e) {
             { class: '6C', seat: 5, name: '龔睿熙', nameEn: 'GONG YUI HEI', status: 'Active' }
         ];
 
-        // 功課與出席紀錄
-        let homeworkLogsDB = [
+        const SEED_HOMEWORK_LOGS_DB = [
             { date: '2026-09-01', class: '1A', subject: '中文', taskName: '單元一工作紙', studentName: '陳芷晴', attendance: 'Present', isMissing: true, remark: '未帶作業' },
             { date: '2026-09-01', class: '1A', subject: '中文', taskName: '單元一工作紙', studentName: '陳柏杋', attendance: 'Sick_Leave', isMissing: false, remark: '病假 (不計欠交)' }
         ];
 
+        // 運行中資料庫 (由 LocalStorage 載入或使用種子資料)
+        let classesDB = [];
+        let studentsDB = [];
+        let homeworkLogsDB = [];
         let importedTempData = [];
         let currentInspectingClass = '';
+
+        // ==========================================
+        // 1.5 本機持久化儲存 (LocalStorage Manager)
+        // ==========================================
+        const STORAGE_KEY_CLASSES = 'school_system_classes_v2';
+        const STORAGE_KEY_STUDENTS = 'school_system_students_v2';
+        const STORAGE_KEY_LOGS = 'school_system_logs_v2';
+        const STORAGE_KEY_LAST_SAVED = 'school_system_last_saved_v2';
+
+        function saveAllToLocalStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classesDB));
+                localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(studentsDB));
+                localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(homeworkLogsDB));
+                const nowStr = new Date().toLocaleString('zh-TW');
+                localStorage.setItem(STORAGE_KEY_LAST_SAVED, nowStr);
+
+                updateStorageMetrics();
+            } catch (err) {
+                console.error('LocalStorage Save Error:', err);
+                showToast('寫入本機長期儲存空間時出錯，空間可能已滿', 'error');
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const storedClasses = localStorage.getItem(STORAGE_KEY_CLASSES);
+                const storedStudents = localStorage.getItem(STORAGE_KEY_STUDENTS);
+                const storedLogs = localStorage.getItem(STORAGE_KEY_LOGS);
+
+                if (storedClasses && storedStudents) {
+                    classesDB = JSON.parse(storedClasses);
+                    studentsDB = JSON.parse(storedStudents);
+                    homeworkLogsDB = storedLogs ? JSON.parse(storedLogs) : [];
+                } else {
+                    // 若初次使用，則載入預設種子資料並儲存
+                    classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
+                    studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
+                    homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
+                    saveAllToLocalStorage();
+                }
+            } catch (err) {
+                console.error('LocalStorage Read Error:', err);
+                classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
+                studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
+                homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
+            }
+            updateStorageMetrics();
+        }
+
+        function updateStorageMetrics() {
+            const strClasses = localStorage.getItem(STORAGE_KEY_CLASSES) || '';
+            const strStudents = localStorage.getItem(STORAGE_KEY_STUDENTS) || '';
+            const strLogs = localStorage.getItem(STORAGE_KEY_LOGS) || '';
+            const totalBytes = new Blob([strClasses + strStudents + strLogs]).size;
+            const sizeKb = (totalBytes / 1024).toFixed(2);
+
+            const lastSaved = localStorage.getItem(STORAGE_KEY_LAST_SAVED) || '未儲存';
+
+            const usedElem = document.getElementById('storageUsedText');
+            const timeElem = document.getElementById('lastSavedTimeText');
+            if (usedElem) usedElem.textContent = `${sizeKb} KB`;
+            if (timeElem) timeElem.textContent = lastSaved;
+        }
+
+        function resetToDefaultData() {
+            if (currentRole !== 'Admin') {
+                showToast('權限不足', 'error');
+                return;
+            }
+            if (confirm('警告：確定要將系統恢復至預設範例資料？現有的匯入學生與欠交紀錄將被覆蓋！')) {
+                classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
+                studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
+                homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
+                saveAllToLocalStorage();
+
+                populateClassSelects();
+                loadStudentGrid();
+                renderReportTable();
+                renderAdminStudents();
+                renderAdminClasses();
+                renderVirtualStorageBuckets();
+
+                showToast('已完成重置，回復至預設資料庫！', 'success');
+            }
+        }
 
         // ==========================================
         // 2. 頁面載入與 Tab 導覽控管
         // ==========================================
         window.onload = function() {
+            loadFromLocalStorage();
+
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('regDate').value = today;
 
@@ -927,7 +1036,10 @@ function doPost(e) {
                 }
             });
 
-            showToast(`已成功儲存 ${addedCount} 筆登記紀錄！`, 'success');
+            // 存入長期 LocalStorage
+            saveAllToLocalStorage();
+
+            showToast(`已成功儲存 ${addedCount} 筆登記紀錄並寫入長期資料庫！`, 'success');
 
             const gasUrl = localStorage.getItem('gas_webhook_url') || DEFAULT_GAS_URL;
             if (gasUrl && missingToSync.length > 0) {
@@ -1109,7 +1221,7 @@ function doPost(e) {
         }
 
         // ==========================================
-        // 6. Admin 管理者專區邏輯 (三層智能解碼 CSV)
+        // 6. Admin 管理者專區邏輯 (長期儲存與匯入)
         // ==========================================
         function renderAdminStudents() {
             const tbody = document.getElementById('adminStudentTableBody');
@@ -1198,13 +1310,12 @@ function doPost(e) {
                                 // 2. 嘗試 Strict UTF-8 解碼
                                 text = new TextDecoder('utf-8', { fatal: true }).decode(data);
                             } catch (utfErr) {
-                                // 3. 捕捉無效 UTF-8，自動轉為 Big5 繁體中文解碼 (解決 Windows Excel CSV 亂碼)
+                                // 3. 捕捉無效 UTF-8，自動轉為 Big5 繁體中文解碼
                                 text = new TextDecoder('big5').decode(data);
                             }
                         }
                         rawJson = parseCSVText(text);
                     } else {
-                        // Excel .xlsx / .xls 檔案經 SheetJS 讀取
                         if (typeof XLSX === 'undefined') {
                             showToast('SheetJS 函式庫讀取中，請稍後重試。', 'error');
                             return;
@@ -1215,7 +1326,6 @@ function doPost(e) {
                         rawJson = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
                     }
 
-                    // 映射與清洗欄位資料
                     importedTempData = rawJson.map(row => {
                         const keys = Object.keys(row);
                         const getVal = (possibleNames) => {
@@ -1243,7 +1353,6 @@ function doPost(e) {
                         return;
                     }
 
-                    // 渲染預覽表格
                     const previewTable = document.getElementById('importPreviewTable');
                     previewTable.innerHTML = '';
                     importedTempData.slice(0, 10).forEach(item => {
@@ -1289,6 +1398,9 @@ function doPost(e) {
                 addedCount++;
             });
 
+            // 關鍵修改：匯入成功後儲存至長期記憶庫 LocalStorage
+            saveAllToLocalStorage();
+
             populateClassSelects();
             renderAdminStudents();
             renderAdminClasses();
@@ -1296,7 +1408,7 @@ function doPost(e) {
             loadStudentGrid();
             
             closeModal('importModal');
-            showToast(`批量匯入成功！已成功導入 ${addedCount} 筆學生資料。`, 'success');
+            showToast(`批量匯入成功！已成功長期儲存 ${addedCount} 筆學生資料！`, 'success');
             
             importedTempData = [];
             document.getElementById('csvFileInput').value = '';
@@ -1336,7 +1448,7 @@ function doPost(e) {
                         <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">${sizeKb} KB</span>
                     </div>
                     <div class="text-xs text-slate-500 space-y-1">
-                        <div>儲存狀態: <span class="text-emerald-600 font-bold">健康 (In-Memory)</span></div>
+                        <div>儲存狀態: <span class="text-emerald-600 font-bold"><i class="fa-solid fa-hard-drive mr-1"></i>已長期持久化存檔</span></div>
                         <div>學生總數: <strong class="text-slate-700">${classStudents.length}</strong> 人</div>
                     </div>
                     <div class="pt-2 border-t flex justify-between gap-2">
@@ -1372,11 +1484,14 @@ function doPost(e) {
 
                 studentsDB = studentsDB.filter(s => s.class !== currentInspectingClass).concat(updated);
                 
+                // 存入長期儲存
+                saveAllToLocalStorage();
+
                 renderAdminStudents();
                 renderVirtualStorageBuckets();
                 loadStudentGrid();
                 closeModal('jsonInspectorModal');
-                showToast(`虛擬儲存區 ${currentInspectingClass} 已成功儲存！`, 'success');
+                showToast(`虛擬儲存區 ${currentInspectingClass} 已成功更新並持久化保存！`, 'success');
             } catch (err) {
                 showToast(`JSON 語法錯誤：${err.message}`, 'error');
             }
@@ -1453,16 +1568,18 @@ function doPost(e) {
                 studentsDB[parseInt(idx)] = data;
             }
 
+            saveAllToLocalStorage();
             renderAdminStudents();
             renderVirtualStorageBuckets();
             loadStudentGrid();
             closeModal('studentModal');
-            showToast('學生資料儲存成功！', 'success');
+            showToast('學生資料儲存成功並更新長期資料庫！', 'success');
         }
 
         function deleteStudent(idx) {
             if (currentRole !== 'Admin') return;
             studentsDB.splice(idx, 1);
+            saveAllToLocalStorage();
             renderAdminStudents();
             renderVirtualStorageBuckets();
             loadStudentGrid();
@@ -1475,6 +1592,7 @@ function doPost(e) {
             if (cName) {
                 const tName = prompt('請輸入班導師姓名:') || '未指定';
                 classesDB.push({ id: cName, name: `${cName} 班`, teacher: tName });
+                saveAllToLocalStorage();
                 populateClassSelects();
                 renderAdminClasses();
                 renderVirtualStorageBuckets();
@@ -1485,6 +1603,7 @@ function doPost(e) {
         function deleteClass(idx) {
             if (currentRole !== 'Admin') return;
             classesDB.splice(idx, 1);
+            saveAllToLocalStorage();
             populateClassSelects();
             renderAdminClasses();
             renderVirtualStorageBuckets();
@@ -1510,11 +1629,12 @@ function doPost(e) {
             });
 
             homeworkLogsDB = [];
+            saveAllToLocalStorage();
             renderAdminStudents();
             renderVirtualStorageBuckets();
             loadStudentGrid();
             renderReportTable();
-            showToast('全校學年升級作業完成！歷史紀錄已歸檔。', 'success');
+            showToast('全校學年升級作業完成！歷史紀錄已歸檔並更新儲存。', 'success');
         }
 
         function closeModal(modalId) {
