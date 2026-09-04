@@ -383,7 +383,7 @@
                 <button onclick="closeModal('importModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-3">
-                <p class="text-xs text-slate-600">請上傳包含以下欄位的 CSV 或 Excel 檔案：<br><code class="bg-slate-100 px-1 rounded text-indigo-600">班別, 座號, 中文姓名, 英文姓名</code></p>
+                <p class="text-xs text-slate-600">請上傳包含以下欄位的 CSV 或 Excel 檔案：<br><code class="bg-slate-100 px-1 rounded text-indigo-600">學號, 班別, 座號, 中文姓名, 英文姓名</code></p>
                 <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-indigo-500 transition cursor-pointer" onclick="document.getElementById('csvFileInput').click()">
                     <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
                     <p class="text-sm font-medium text-slate-700">點擊選擇檔案 或 將檔案拖曳至此</p>
@@ -395,7 +395,7 @@
                         <span>預覽讀取資料 (<span id="importCount">0</span> 筆)</span>
                         <span id="importFileName" class="text-indigo-600 font-mono"></span>
                     </div>
-                    <div class="max-h-32 overflow-y-auto font-mono text-[11px] bg-white p-2 border rounded">
+                    <div class="max-h-36 overflow-y-auto font-mono text-[11px] bg-white p-2 border rounded">
                         <table class="w-full text-left">
                             <thead>
                                 <tr class="border-b"><th>班別</th><th>座號</th><th>中文姓名</th><th>英文姓名</th></tr>
@@ -565,14 +565,33 @@ function doPost(e) {
             { class: '1A', seat: 8, name: '許朗逸', nameEn: 'HUI LONG YAT LUCAS', status: 'Active' },
             { class: '1A', seat: 9, name: '黎諾允', nameEn: 'LAI NOK WAN', status: 'Active' },
             { class: '1A', seat: 10, name: '劉韋辛', nameEn: 'LAU WAI SAN', status: 'Active' },
+            { class: '1A', seat: 11, name: '梁家希', nameEn: 'LEUNG KA HEI', status: 'Active' },
+            { class: '1A', seat: 12, name: '李嘉雯', nameEn: 'LI KA MAN', status: 'Active' },
+            { class: '1A', seat: 13, name: '李宜洋', nameEn: 'LI YI YEUNG', status: 'Active' },
+            { class: '1A', seat: 14, name: '林景文', nameEn: 'LIN JING WEN KEVIN', status: 'Active' },
+            { class: '1A', seat: 15, name: '劉昕娜', nameEn: 'LIU YAN NA', status: 'Active' },
+            { class: '1A', seat: 16, name: '呂焯言', nameEn: 'LUI CHEUK YIN', status: 'Active' },
+            { class: '1A', seat: 17, name: '伍晉曦', nameEn: 'NG CHUN HEI', status: 'Active' },
+            { class: '1A', seat: 18, name: '伍穎莎', nameEn: 'NG WING SA', status: 'Active' },
             { class: '6B', seat: 7, name: '梁樂兒', nameEn: 'LEUNG LOK YI', status: 'Active' },
             { class: '6B', seat: 8, name: '呂志偉', nameEn: 'LUI CHI WAI', status: 'Active' },
             { class: '6B', seat: 9, name: '馬浩霖', nameEn: 'MA HO LAM', status: 'Active' },
             { class: '6B', seat: 10, name: '吳卓彥', nameEn: 'NG CHEUK YIN', status: 'Active' },
             { class: '6B', seat: 11, name: '吳峻一', nameEn: 'NG CHUN YAT', status: 'Active' },
+            { class: '6B', seat: 12, name: '吳日朗', nameEn: 'NG YAT LONG', status: 'Active' },
+            { class: '6B', seat: 13, name: '蘇暐騏', nameEn: 'SO WAI KI', status: 'Active' },
+            { class: '6B', seat: 14, name: '譚焯縈', nameEn: 'TAM CHEOK IENG', status: 'Active' },
+            { class: '6B', seat: 15, name: '徐懿朗', nameEn: 'TSUI YI LONG', status: 'Active' },
+            { class: '6B', seat: 16, name: '黃峻琛', nameEn: 'WONG CHUN SUM JAMES', status: 'Active' },
+            { class: '6B', seat: 17, name: '黃子健', nameEn: 'WONG LOUIS TSZ KIN', status: 'Active' },
+            { class: '6B', seat: 18, name: '黃劭軒', nameEn: 'WONG SIU HIN', status: 'Active' },
+            { class: '6B', seat: 19, name: '余沛霈', nameEn: 'YEE PUI PUI', status: 'Active' },
+            { class: '6B', seat: 20, name: '葉晴文', nameEn: 'YIP CHING MAN', status: 'Active' },
             { class: '6C', seat: 1, name: '鄧洛宜', nameEn: 'DENG LOK YI', status: 'Active' },
             { class: '6C', seat: 2, name: '馮千睿', nameEn: 'FUNG CHIN YUI', status: 'Active' },
-            { class: '6C', seat: 3, name: '馮兆禧', nameEn: 'FUNG SIU HEI', status: 'Active' }
+            { class: '6C', seat: 3, name: '馮兆禧', nameEn: 'FUNG SIU HEI', status: 'Active' },
+            { class: '6C', seat: 4, name: '馮影雪', nameEn: 'FUNG YING SUET SHIRLEY', status: 'Active' },
+            { class: '6C', seat: 5, name: '龔睿熙', nameEn: 'GONG YUI HEI', status: 'Active' }
         ];
 
         // 功課與出席紀錄
@@ -937,7 +956,85 @@ function doPost(e) {
         }
 
         // ==========================================
-        // 4. 統計報表
+        // 4. 原生萬能 CSV 解析邏輯 (防亂碼核心)
+        // ==========================================
+        function parseCSVText(csvText) {
+            if (!csvText) return [];
+            // 清除 UTF-8 BOM
+            if (csvText.charCodeAt(0) === 0xFEFF) {
+                csvText = csvText.slice(1);
+            }
+
+            // 自動判斷分隔符 (逗號 / 分號 / Tab)
+            let delimiter = ',';
+            const firstLine = csvText.split(/\r\n|\n|\r/)[0] || '';
+            if (firstLine.includes('\t') && !firstLine.includes(',')) delimiter = '\t';
+            else if (firstLine.includes(';') && !firstLine.includes(',')) delimiter = ';';
+
+            const lines = [];
+            let currentRow = [];
+            let currentCell = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < csvText.length; i++) {
+                const char = csvText[i];
+                const nextChar = csvText[i + 1];
+
+                if (inQuotes) {
+                    if (char === '"' && nextChar === '"') {
+                        currentCell += '"';
+                        i++;
+                    } else if (char === '"') {
+                        inQuotes = false;
+                    } else {
+                        currentCell += char;
+                    }
+                } else {
+                    if (char === '"') {
+                        inQuotes = true;
+                    } else if (char === delimiter) {
+                        currentRow.push(currentCell.trim());
+                        currentCell = '';
+                    } else if (char === '\r' && nextChar === '\n') {
+                        currentRow.push(currentCell.trim());
+                        lines.push(currentRow);
+                        currentRow = [];
+                        currentCell = '';
+                        i++;
+                    } else if (char === '\n' || char === '\r') {
+                        currentRow.push(currentCell.trim());
+                        lines.push(currentRow);
+                        currentRow = [];
+                        currentCell = '';
+                    } else {
+                        currentCell += char;
+                    }
+                }
+            }
+            if (currentCell !== '' || currentRow.length > 0) {
+                currentRow.push(currentCell.trim());
+                lines.push(currentRow);
+            }
+
+            if (lines.length === 0) return [];
+
+            const headers = lines[0].map(h => h.replace(/^\uFEFF/, '').trim());
+            const result = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const row = lines[i];
+                if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
+                const rowObj = {};
+                headers.forEach((h, colIdx) => {
+                    rowObj[h] = row[colIdx] !== undefined ? row[colIdx] : '';
+                });
+                result.push(rowObj);
+            }
+            return result;
+        }
+
+        // ==========================================
+        // 5. 統計報表
         // ==========================================
         function renderReportTable() {
             const selectedClass = document.getElementById('reportClass').value;
@@ -1012,7 +1109,7 @@ function doPost(e) {
         }
 
         // ==========================================
-        // 5. Admin 管理者專區邏輯 (相容 Big5/UTF-8 CSV 解碼)
+        // 6. Admin 管理者專區邏輯 (三層智能解碼 CSV)
         // ==========================================
         function renderAdminStudents() {
             const tbody = document.getElementById('adminStudentTableBody');
@@ -1075,7 +1172,7 @@ function doPost(e) {
             });
         }
 
-        // CSV/Excel 檔案選取與解析 (支援 UTF-8 / Big5 繁體中文解碼)
+        // CSV/Excel 檔案選取與解析 (相容多種解碼)
         function handleFileUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -1085,43 +1182,73 @@ function doPost(e) {
 
             reader.onload = function(evt) {
                 try {
-                    const data = new Uint8Array(evt.target.result);
-                    let workbook;
+                    const buffer = evt.target.result;
+                    const data = new Uint8Array(buffer);
+                    let rawJson = [];
 
-                    if (file.name.toLowerCase().endsWith('.csv')) {
-                        // 雙重解碼機制：優先嘗試 UTF-8，失敗時轉用 Big5 解碼 (解決 Excel 匯出 CSV 亂碼)
+                    const isCSV = file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv';
+
+                    if (isCSV) {
                         let text = '';
-                        try {
-                            const decoderUtf8 = new TextDecoder('utf-8', { fatal: true });
-                            text = decoderUtf8.decode(data);
-                        } catch (utfErr) {
-                            const decoderBig5 = new TextDecoder('big5');
-                            text = decoderBig5.decode(data);
+                        // 1. 判別 UTF-8 BOM
+                        if (data.length >= 3 && data[0] === 0xEF && data[1] === 0xBB && data[2] === 0xBF) {
+                            text = new TextDecoder('utf-8').decode(data.subarray(3));
+                        } else {
+                            try {
+                                // 2. 嘗試 Strict UTF-8 解碼
+                                text = new TextDecoder('utf-8', { fatal: true }).decode(data);
+                            } catch (utfErr) {
+                                // 3. 捕捉無效 UTF-8，自動轉為 Big5 繁體中文解碼 (解決 Windows Excel CSV 亂碼)
+                                text = new TextDecoder('big5').decode(data);
+                            }
                         }
-                        workbook = XLSX.read(text, { type: 'string' });
+                        rawJson = parseCSVText(text);
                     } else {
-                        workbook = XLSX.read(data, { type: 'array' });
+                        // Excel .xlsx / .xls 檔案經 SheetJS 讀取
+                        if (typeof XLSX === 'undefined') {
+                            showToast('SheetJS 函式庫讀取中，請稍後重試。', 'error');
+                            return;
+                        }
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        rawJson = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
                     }
 
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet);
+                    // 映射與清洗欄位資料
+                    importedTempData = rawJson.map(row => {
+                        const keys = Object.keys(row);
+                        const getVal = (possibleNames) => {
+                            for (const name of possibleNames) {
+                                const matchedKey = keys.find(k => k.replace(/^\uFEFF/, '').trim() === name);
+                                if (matchedKey && row[matchedKey] !== undefined && row[matchedKey] !== null) {
+                                    return String(row[matchedKey]).trim();
+                                }
+                            }
+                            return '';
+                        };
 
-                    importedTempData = json.map(row => {
-                        const cls = String(row['班別'] || row['Class'] || '1A').trim();
-                        const seat = parseInt(row['座號'] || row['Seat'] || row['號碼'] || 1);
-                        const name = String(row['中文姓名'] || row['姓名'] || row['Name'] || row['學生姓名'] || '').trim();
-                        const nameEn = String(row['英文姓名'] || row['English Name'] || '').trim();
+                        const cls = getVal(['班別', 'Class', 'class']) || '1A';
+                        const seatVal = getVal(['座號', 'Seat', 'seat', '號碼', '學號']);
+                        const seat = parseInt(seatVal) || 1;
+                        const name = getVal(['中文姓名', '姓名', 'Name', 'name', '學生姓名']);
+                        const nameEn = getVal(['英文姓名', 'English Name', 'nameEn', 'NameEn', '英文名']);
 
                         return { class: cls, seat: seat, name: name, nameEn: nameEn, status: 'Active' };
                     }).filter(item => item.name !== '');
 
+                    if (importedTempData.length === 0) {
+                        showToast('無法從檔案中讀取資料，請確認標頭欄位為：學號,班別,座號,中文姓名,英文姓名。', 'error');
+                        document.getElementById('importPreviewArea').classList.add('hidden');
+                        return;
+                    }
+
                     // 渲染預覽表格
                     const previewTable = document.getElementById('importPreviewTable');
                     previewTable.innerHTML = '';
-                    importedTempData.slice(0, 5).forEach(item => {
+                    importedTempData.slice(0, 10).forEach(item => {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = `<td>${item.class}</td><td>${item.seat}</td><td>${item.name}</td><td>${item.nameEn || '-'}</td>`;
+                        tr.innerHTML = `<td class="p-1">${item.class}</td><td class="p-1">${item.seat}</td><td class="p-1 font-bold">${item.name}</td><td class="p-1 text-slate-500">${item.nameEn || '-'}</td>`;
                         previewTable.appendChild(tr);
                     });
 
@@ -1129,7 +1256,8 @@ function doPost(e) {
                     document.getElementById('importPreviewArea').classList.remove('hidden');
 
                 } catch (err) {
-                    showToast('檔案解析失敗，請確保格式為正確的 CSV 或 Excel！', 'error');
+                    console.error('File parse error:', err);
+                    showToast('檔案解析失敗，請確保上傳標準 CSV 或 Excel 檔案！', 'error');
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -1141,7 +1269,7 @@ function doPost(e) {
                 return;
             }
 
-            if (importedTempData.length === 0) {
+            if (!importedTempData || importedTempData.length === 0) {
                 showToast('請先上傳包含有效資料的檔案！', 'error');
                 return;
             }
@@ -1168,7 +1296,7 @@ function doPost(e) {
             loadStudentGrid();
             
             closeModal('importModal');
-            showToast(`批量匯入成功！已導入 ${addedCount} 筆學生資料。`, 'success');
+            showToast(`批量匯入成功！已成功導入 ${addedCount} 筆學生資料。`, 'success');
             
             importedTempData = [];
             document.getElementById('csvFileInput').value = '';
@@ -1176,8 +1304,7 @@ function doPost(e) {
         }
 
         function downloadCSVTemplate() {
-            // 加入 \uFEFF BOM 標頭，避免微軟 Excel 開啟 CSV 範本時出現繁體中文亂碼
-            const template = "\uFEFF班別,座號,中文姓名,英文姓名\n1A,1,陳大文,Chan Tai Man\n1A,2,李小珠,Lee Siu Chu";
+            const template = "\uFEFF學號,班別,座號,中文姓名,英文姓名\n01,1A,01,陳芷晴,CHAN CHI CHENG\n02,1A,02,陳柏杋,CHAN PAK FAN\n03,1A,03,陳琛,CHAN SAM";
             const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
