@@ -387,7 +387,7 @@
                 <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-indigo-500 transition cursor-pointer" onclick="document.getElementById('csvFileInput').click()">
                     <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
                     <p class="text-sm font-medium text-slate-700">點擊選擇檔案 或 將檔案拖曳至此</p>
-                    <input type="file" id="csvFileInput" accept=".csv, .xlsx, .xls" onchange="handleFileUpload(event)" class="hidden">
+                    <input type="file" id="csvFileInput" accept=".csv, .xlsx, .xls" onchange="handleFileUpload(event)" onclick="this.value=null" class="hidden">
                 </div>
                 
                 <div id="importPreviewArea" class="hidden border rounded-lg p-3 bg-slate-50 text-xs space-y-2">
@@ -540,7 +540,7 @@ function doPost(e) {
         // ==========================================
         // 1. 初始化資料庫與狀態變數
         // ==========================================
-        let currentRole = 'Admin'; // 預設權限 'Teacher' | 'FormTeacher' | 'Admin'
+        let currentRole = 'Admin';
         const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxdNinOitdJ35aE363yqROblvp5bpInhdv5RppRsB-HY-g7lpLO84J6-mv81_C4XpfY/exec';
 
         // 預設班別資料
@@ -548,25 +548,37 @@ function doPost(e) {
             { id: '1A', name: '1A 班', teacher: '王美麗 老師' },
             { id: '1B', name: '1B 班', teacher: '陳大文 老師' },
             { id: '2A', name: '2A 班', teacher: '張立德 老師' },
-            { id: '2B', name: '2B 班', teacher: '李心怡 老師' }
+            { id: '2B', name: '2B 班', teacher: '李心怡 老師' },
+            { id: '6B', name: '6B 班', teacher: '黃明輝 老師' },
+            { id: '6C', name: '6C 班', teacher: '鄭雅婷 老師' }
         ];
 
-        // 預設學生資料庫
+        // 預設學生資料庫 (預寫入匯入範本中的學生資料)
         let studentsDB = [
-            { class: '1A', seat: 1, name: '陳小明', nameEn: 'Chan Siu Ming', status: 'Active' },
-            { class: '1A', seat: 2, name: '張大華', nameEn: 'Cheung Tai Wa', status: 'Active' },
-            { class: '1A', seat: 3, name: '李美玲', nameEn: 'Lee Mei Ling', status: 'Active' },
-            { class: '1A', seat: 4, name: '黃子豪', nameEn: 'Wong Tsz Ho', status: 'Active' },
-            { class: '1A', seat: 5, name: '林家欣', nameEn: 'Lam Ka Yan', status: 'Active' },
-            { class: '1B', seat: 1, name: '趙一鳴', nameEn: 'Chiu Yat Ming', status: 'Active' },
-            { class: '1B', seat: 2, name: '周曉彤', nameEn: 'Chow Hiu Tung', status: 'Active' },
-            { class: '2A', seat: 1, name: '吳志強', nameEn: 'Ng Chi Keung', status: 'Active' }
+            { class: '1A', seat: 1, name: '陳芷晴', nameEn: 'CHAN CHI CHENG', status: 'Active' },
+            { class: '1A', seat: 2, name: '陳柏杋', nameEn: 'CHAN PAK FAN', status: 'Active' },
+            { class: '1A', seat: 3, name: '陳琛', nameEn: 'CHAN SAM', status: 'Active' },
+            { class: '1A', seat: 4, name: '陳皓忻', nameEn: 'CHEN HO YAN', status: 'Active' },
+            { class: '1A', seat: 5, name: '陳梓睿', nameEn: 'CHEN ZIRUI', status: 'Active' },
+            { class: '1A', seat: 6, name: '張曦儀', nameEn: 'CHEUNG HEI YEE', status: 'Active' },
+            { class: '1A', seat: 7, name: '蔡己瑜', nameEn: 'CHOI KEI YU', status: 'Active' },
+            { class: '1A', seat: 8, name: '許朗逸', nameEn: 'HUI LONG YAT LUCAS', status: 'Active' },
+            { class: '1A', seat: 9, name: '黎諾允', nameEn: 'LAI NOK WAN', status: 'Active' },
+            { class: '1A', seat: 10, name: '劉韋辛', nameEn: 'LAU WAI SAN', status: 'Active' },
+            { class: '6B', seat: 7, name: '梁樂兒', nameEn: 'LEUNG LOK YI', status: 'Active' },
+            { class: '6B', seat: 8, name: '呂志偉', nameEn: 'LUI CHI WAI', status: 'Active' },
+            { class: '6B', seat: 9, name: '馬浩霖', nameEn: 'MA HO LAM', status: 'Active' },
+            { class: '6B', seat: 10, name: '吳卓彥', nameEn: 'NG CHEUK YIN', status: 'Active' },
+            { class: '6B', seat: 11, name: '吳峻一', nameEn: 'NG CHUN YAT', status: 'Active' },
+            { class: '6C', seat: 1, name: '鄧洛宜', nameEn: 'DENG LOK YI', status: 'Active' },
+            { class: '6C', seat: 2, name: '馮千睿', nameEn: 'FUNG CHIN YUI', status: 'Active' },
+            { class: '6C', seat: 3, name: '馮兆禧', nameEn: 'FUNG SIU HEI', status: 'Active' }
         ];
 
         // 功課與出席紀錄
         let homeworkLogsDB = [
-            { date: '2026-09-01', class: '1A', subject: '中文', taskName: '單元一工作紙', studentName: '陳小明', attendance: 'Present', isMissing: true, remark: '未帶上學期作業' },
-            { date: '2026-09-01', class: '1A', subject: '中文', taskName: '單元一工作紙', studentName: '張大華', attendance: 'Sick_Leave', isMissing: false, remark: '病假 (不計欠交)' }
+            { date: '2026-09-01', class: '1A', subject: '中文', taskName: '單元一工作紙', studentName: '陳芷晴', attendance: 'Present', isMissing: true, remark: '未帶作業' },
+            { date: '2026-09-01', class: '1A', subject: '中文', taskName: '單元一工作紙', studentName: '陳柏杋', attendance: 'Sick_Leave', isMissing: false, remark: '病假 (不計欠交)' }
         ];
 
         let importedTempData = [];
@@ -858,7 +870,7 @@ function doPost(e) {
             let regTaskName = document.getElementById('regTaskName').value.trim();
 
             if (!regTaskName) {
-                regTaskName = '-'; // 留空時設為預設標籤
+                regTaskName = '-';
             }
 
             const currentStudents = studentsDB.filter(s => s.class === regClass && s.status === 'Active').sort((a,b)=>a.seat-b.seat);
@@ -1000,13 +1012,12 @@ function doPost(e) {
         }
 
         // ==========================================
-        // 5. Admin 管理者專區邏輯 (修正批量匯入與虛擬存儲)
+        // 5. Admin 管理者專區邏輯 (相容 Big5/UTF-8 CSV 解碼)
         // ==========================================
         function renderAdminStudents() {
             const tbody = document.getElementById('adminStudentTableBody');
             tbody.innerHTML = '';
 
-            // 按班別與座號排序
             const sorted = studentsDB.slice().sort((a, b) => {
                 if (a.class !== b.class) return a.class.localeCompare(b.class);
                 return a.seat - b.seat;
@@ -1064,7 +1075,7 @@ function doPost(e) {
             });
         }
 
-        // CSV/Excel 檔案選取與解析 (修復顯示問題)
+        // CSV/Excel 檔案選取與解析 (支援 UTF-8 / Big5 繁體中文解碼)
         function handleFileUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -1075,13 +1086,28 @@ function doPost(e) {
             reader.onload = function(evt) {
                 try {
                     const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+                    let workbook;
+
+                    if (file.name.toLowerCase().endsWith('.csv')) {
+                        // 雙重解碼機制：優先嘗試 UTF-8，失敗時轉用 Big5 解碼 (解決 Excel 匯出 CSV 亂碼)
+                        let text = '';
+                        try {
+                            const decoderUtf8 = new TextDecoder('utf-8', { fatal: true });
+                            text = decoderUtf8.decode(data);
+                        } catch (utfErr) {
+                            const decoderBig5 = new TextDecoder('big5');
+                            text = decoderBig5.decode(data);
+                        }
+                        workbook = XLSX.read(text, { type: 'string' });
+                    } else {
+                        workbook = XLSX.read(data, { type: 'array' });
+                    }
+
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     const json = XLSX.utils.sheet_to_json(worksheet);
 
                     importedTempData = json.map(row => {
-                        // 彈性相容各種常見標頭
                         const cls = String(row['班別'] || row['Class'] || '1A').trim();
                         const seat = parseInt(row['座號'] || row['Seat'] || row['號碼'] || 1);
                         const name = String(row['中文姓名'] || row['姓名'] || row['Name'] || row['學生姓名'] || '').trim();
@@ -1109,7 +1135,6 @@ function doPost(e) {
             reader.readAsArrayBuffer(file);
         }
 
-        // 確認匯入邏輯
         function processImport() {
             if (currentRole !== 'Admin') {
                 showToast('無 Admin 權限執行此操作', 'error');
@@ -1123,12 +1148,10 @@ function doPost(e) {
 
             let addedCount = 0;
             importedTempData.forEach(item => {
-                // 自動建置不存在的班別
                 if (!classesDB.some(c => c.id === item.class)) {
                     classesDB.push({ id: item.class, name: `${item.class} 班`, teacher: '未指定' });
                 }
 
-                // 檢查是否重複，覆蓋或新增
                 const existIdx = studentsDB.findIndex(s => s.class === item.class && s.seat === item.seat);
                 if (existIdx >= 0) {
                     studentsDB[existIdx] = item;
@@ -1138,7 +1161,6 @@ function doPost(e) {
                 addedCount++;
             });
 
-            // 重新刷新系統選單與視圖
             populateClassSelects();
             renderAdminStudents();
             renderAdminClasses();
@@ -1148,14 +1170,14 @@ function doPost(e) {
             closeModal('importModal');
             showToast(`批量匯入成功！已導入 ${addedCount} 筆學生資料。`, 'success');
             
-            // 重設上傳
             importedTempData = [];
             document.getElementById('csvFileInput').value = '';
             document.getElementById('importPreviewArea').classList.add('hidden');
         }
 
         function downloadCSVTemplate() {
-            const template = "班別,座號,中文姓名,英文姓名\n1A,1,陳大文,Chan Tai Man\n1A,2,李小珠,Lee Siu Chu";
+            // 加入 \uFEFF BOM 標頭，避免微軟 Excel 開啟 CSV 範本時出現繁體中文亂碼
+            const template = "\uFEFF班別,座號,中文姓名,英文姓名\n1A,1,陳大文,Chan Tai Man\n1A,2,李小珠,Lee Siu Chu";
             const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
@@ -1165,7 +1187,7 @@ function doPost(e) {
             document.body.removeChild(link);
         }
 
-        // 虛擬獨立儲存空間渲染 (Virtual Bucket UI)
+        // 虛擬獨立儲存空間渲染
         function renderVirtualStorageBuckets() {
             const container = document.getElementById('virtualStorageContainer');
             if (!container) return;
@@ -1221,7 +1243,6 @@ function doPost(e) {
                 const updated = JSON.parse(document.getElementById('jsonContentArea').value);
                 if (!Array.isArray(updated)) throw new Error('格式必須為 Array 陣列');
 
-                // 移除該班原學生並覆寫
                 studentsDB = studentsDB.filter(s => s.class !== currentInspectingClass).concat(updated);
                 
                 renderAdminStudents();
@@ -1369,7 +1390,6 @@ function doPost(e) {
             showToast('全校學年升級作業完成！歷史紀錄已歸檔。', 'success');
         }
 
-        // Helper 工具
         function closeModal(modalId) {
             document.getElementById(modalId).classList.add('hidden');
         }
