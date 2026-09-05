@@ -38,8 +38,8 @@
             <div class="flex items-center space-x-4 bg-indigo-950 px-3 py-1.5 rounded-lg border border-indigo-700">
                 <span class="text-xs text-indigo-300">目前權限模擬：</span>
                 <select id="roleSelector" onchange="changeRole(this.value)" class="bg-indigo-900 text-white text-sm font-medium rounded border border-indigo-600 px-2 py-1 focus:outline-none">
-                    <option value="Teacher">任課教師 (Teacher)</option>
-                    <option value="FormTeacher">班導師 (Form Teacher - 1A)</option>
+                    <option value="Teacher">任課人員 (Teacher)</option>
+                    <option value="FormTeacher">班級管理員 (Form Teacher - 1A)</option>
                     <option value="Admin" selected>系統管理者 (Admin)</option>
                 </select>
                 <div class="h-4 w-px bg-indigo-700"></div>
@@ -344,7 +344,7 @@
                 </div>
             </div>
 
-            <!-- SubTab 2: 班別與班導師維護 -->
+            <!-- SubTab 2: 班別維護 -->
             <div id="adminSub-classes" class="hidden space-y-4">
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
                     <h3 class="font-bold text-slate-800 text-base">目前學年班別結構 (2026/2027)</h3>
@@ -630,12 +630,12 @@ function doPost(e) {
         let currentRole = 'Admin';
 
         const SEED_CLASSES_DB = [
-            { id: '1A', name: '1A 班', teacher: '王美麗 老師' },
-            { id: '1B', name: '1B 班', teacher: '陳大文 老師' },
-            { id: '2A', name: '2A 班', teacher: '張立德 老師' },
-            { id: '2B', name: '2B 班', teacher: '李心怡 老師' },
-            { id: '6B', name: '6B 班', teacher: '黃明輝 老師' },
-            { id: '6C', name: '6C 班', teacher: '鄭雅婷 老師' }
+            { id: '1A', name: '1A 班' },
+            { id: '1B', name: '1B 班' },
+            { id: '2A', name: '2A 班' },
+            { id: '2B', name: '2B 班' },
+            { id: '6B', name: '6B 班' },
+            { id: '6C', name: '6C 班' }
         ];
 
         const SEED_STUDENTS_DB = [
@@ -767,7 +767,7 @@ function doPost(e) {
 
             if (regClassSelect) {
                 const currentVal = regClassSelect.value;
-                regClassSelect.innerHTML = availableClasses.map(c => `<option value="${c.id}">${c.name} (${c.teacher})</option>`).join('');
+                regClassSelect.innerHTML = availableClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
                 if (currentVal && availableClasses.some(c => c.id === currentVal)) {
                     regClassSelect.value = currentVal;
                 }
@@ -874,10 +874,10 @@ function doPost(e) {
                 userInfo.textContent = '系統管理員 (全校權限)';
                 if (adminWarning) adminWarning.classList.add('hidden');
             } else if (role === 'FormTeacher') {
-                userInfo.textContent = '班導師 (1A 班權限)';
+                userInfo.textContent = '班級管理員 (1A 班權限)';
                 if (adminWarning) adminWarning.classList.remove('hidden');
             } else {
-                userInfo.textContent = '任課教師 (登錄權限)';
+                userInfo.textContent = '任課人員 (登錄權限)';
                 if (adminWarning) adminWarning.classList.remove('hidden');
             }
 
@@ -1537,7 +1537,6 @@ function doPost(e) {
                 card.innerHTML = `
                     <div>
                         <div class="text-lg font-bold text-indigo-900">${c.name}</div>
-                        <div class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-user-tie mr-1"></i>班導師: ${c.teacher}</div>
                         <div class="text-xs text-indigo-600 font-semibold mt-2">學生人數: ${count} 人</div>
                     </div>
                     <button onclick="deleteClass(${idx})" class="admin-only-btn text-red-400 hover:text-red-600 p-2"><i class="fa-solid fa-trash-can"></i></button>
@@ -1654,7 +1653,7 @@ function doPost(e) {
             let addedCount = 0;
             importedTempData.forEach(item => {
                 if (!classesDB.some(c => c.id === item.class)) {
-                    classesDB.push({ id: item.class, name: `${item.class} 班`, teacher: '未指定' });
+                    classesDB.push({ id: item.class, name: `${item.class} 班` });
                 }
 
                 const existIdx = studentsDB.findIndex(s => s.class === item.class && s.seat === item.seat);
@@ -1836,7 +1835,7 @@ function doPost(e) {
 
             // 若該班別尚不存在於班別清單中，自動新增該班別
             if (!classesDB.some(c => c.id === targetClass)) {
-                classesDB.push({ id: targetClass, name: `${targetClass} 班`, teacher: '未指定' });
+                classesDB.push({ id: targetClass, name: `${targetClass} 班` });
             }
 
             const data = {
@@ -1882,8 +1881,7 @@ function doPost(e) {
             if (currentRole !== 'Admin') return;
             const cName = prompt('請輸入新班別名稱 (如: 3A):');
             if (cName) {
-                const tName = prompt('請輸入班導師姓名:') || '未指定';
-                classesDB.push({ id: cName, name: `${cName} 班`, teacher: tName });
+                classesDB.push({ id: cName, name: `${cName} 班` });
                 saveAllToLocalStorage();
                 populateClassSelects();
                 renderAdminClasses();
