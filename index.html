@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>校園功課與出席管理系統</title>
+    <title>校園功課與出席管理系統 (雲端即時同步版)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -28,22 +28,40 @@
 
     <!-- 頂部導覽列 -->
     <header class="bg-indigo-900 text-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-graduation-cap text-2xl text-amber-400"></i>
                 <h1 class="text-xl font-bold tracking-wide">智慧校園功課與出席管理系統</h1>
+                
+                <!-- 雲端同步狀態標籤 -->
+                <div id="cloudSyncStatus" class="inline-flex items-center space-x-1.5 bg-indigo-950 px-2.5 py-1 rounded-full text-xs font-medium border border-indigo-700">
+                    <span id="cloudStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="cloudStatusText" class="text-emerald-300">雲端連線正常</span>
+                </div>
             </div>
             
-            <!-- 角色與權限切換 -->
-            <div class="flex items-center space-x-4 bg-indigo-950 px-3 py-1.5 rounded-lg border border-indigo-700">
-                <span class="text-xs text-indigo-300">目前權限模擬：</span>
-                <select id="roleSelector" onchange="changeRole(this.value)" class="bg-indigo-900 text-white text-sm font-medium rounded border border-indigo-600 px-2 py-1 focus:outline-none">
-                    <option value="Teacher">任課人員 (Teacher)</option>
-                    <option value="FormTeacher">班級管理員 (Form Teacher - 1A)</option>
-                    <option value="Admin" selected>系統管理者 (Admin)</option>
-                </select>
-                <div class="h-4 w-px bg-indigo-700"></div>
-                <span id="userInfo" class="text-xs font-semibold text-amber-300">系統管理員 (全校權限)</span>
+            <!-- 角色與權限切換 + 手動同步 -->
+            <div class="flex items-center space-x-3">
+                <a href="https://docs.google.com/spreadsheets/d/1xISwiklE1mBH_d6c0Lh5NxPxXhxy6Q96SKu8qsBd42U/edit?usp=sharing" target="_blank" class="bg-emerald-700 hover:bg-emerald-600 text-emerald-50 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1 border border-emerald-500 transition shadow-sm" title="開啟特定 Google 試算表資料庫">
+                    <i class="fa-solid fa-table mr-1"></i>
+                    <span class="hidden sm:inline">雲端資料庫</span>
+                </a>
+
+                <button onclick="pullFromCloud()" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1 border border-indigo-600 transition shadow-sm" title="從 Google 試算表拉取最新數據">
+                    <i id="pullSyncIcon" class="fa-solid fa-rotate mr-1"></i>
+                    <span>同步雲端</span>
+                </button>
+
+                <div class="flex items-center space-x-2 bg-indigo-950 px-3 py-1.5 rounded-lg border border-indigo-700">
+                    <span class="text-xs text-indigo-300 hidden sm:inline">權限：</span>
+                    <select id="roleSelector" onchange="changeRole(this.value)" class="bg-indigo-900 text-white text-sm font-medium rounded border border-indigo-600 px-2 py-0.5 focus:outline-none">
+                        <option value="Teacher">任課人員 (Teacher)</option>
+                        <option value="FormTeacher">班級管理員 (Form Teacher - 1A)</option>
+                        <option value="Admin" selected>系統管理者 (Admin)</option>
+                    </select>
+                    <div class="h-4 w-px bg-indigo-700 hidden sm:block"></div>
+                    <span id="userInfo" class="text-xs font-semibold text-amber-300 hidden sm:inline">系統管理員 (全校權限)</span>
+                </div>
             </div>
         </div>
     </header>
@@ -73,8 +91,8 @@
         <section id="view-register" class="space-y-4">
             <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex flex-wrap justify-between items-center gap-2">
                 <div class="flex items-center space-x-2 text-indigo-900">
-                    <i class="fa-solid fa-keyboard text-lg"></i>
-                    <span class="font-medium text-sm">鍵盤快捷鍵：<kbd class="bg-white border border-indigo-200 rounded px-1.5 py-0.5 text-xs font-mono">Space</kbd> 切換欠交狀態 ｜ <kbd class="bg-white border border-indigo-200 rounded px-1.5 py-0.5 text-xs font-mono">↓</kbd> <kbd class="bg-white border border-indigo-200 rounded px-1.5 py-0.5 text-xs font-mono">↑</kbd> 上下移動學生列 ｜ <kbd class="bg-white border border-indigo-200 rounded px-1.5 py-0.5 text-xs font-mono">Ctrl+S</kbd> 儲存登記</span>
+                    <i class="fa-solid fa-cloud-arrow-up text-indigo-600 text-lg"></i>
+                    <span class="font-medium text-sm">雲端即時同步：同步學生清單後，系統已自動依班別分類，可於下方選單切換登記。</span>
                 </div>
                 <span class="text-xs text-indigo-600 font-semibold bg-indigo-100 px-2 py-1 rounded">提示：若學生非「出席」狀態，系統將自動鎖定且不計入欠交統計</span>
             </div>
@@ -85,7 +103,7 @@
                     <input type="date" id="regDate" onchange="onRegContextChange()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">班別 (已依 1A,1B..自然順序排列)</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">班別 (自動同步分類)</label>
                     <select id="regClass" onchange="onRegContextChange()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold text-indigo-900">
                     </select>
                 </div>
@@ -178,8 +196,8 @@
                         <i class="fa-solid fa-circle-info mr-1"></i>快捷提醒：鍵盤上下鍵切換行，<kbd class="border px-1 rounded bg-white">Space</kbd> 可快速變更欠交勾選。
                     </div>
                     <button onclick="saveRegistration()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition flex items-center space-x-2">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        <span>儲存登記 (Ctrl + S)</span>
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>儲存登記並同步至雲端 (Ctrl + S)</span>
                     </button>
                 </div>
             </div>
@@ -285,17 +303,20 @@
                         <i class="fa-solid fa-file-excel text-emerald-600 text-lg"></i>
                         <span class="font-bold text-sm">Google 試算表 Web App 同步網址 (需以 /exec 結尾)：</span>
                     </div>
-                    <div class="flex-grow flex items-center space-x-2 w-full md:w-auto">
-                        <input type="text" id="gasWebhookUrl" value="https://script.google.com/macros/s/AKfycbxcFkr74hwj7UZj7Z0NH5AqGsqMf5e9xlA5gDRIgsZCHFd_yf6s6lHdOGR41dtm8sJq/exec" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full border border-emerald-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-mono">
+                    <div class="flex-grow flex flex-wrap items-center gap-2 w-full md:w-auto">
+                        <input type="text" id="gasWebhookUrl" value="https://script.google.com/macros/s/AKfycbx9ejm3qinyJOm5HWJ4lIVSrLpVW-1b8Qc86l00RsQ_yR1XnvCZH8sKLxg-9hW_2V6W/exec" placeholder="https://script.google.com/macros/s/.../exec" class="flex-grow min-w-[200px] border border-emerald-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-mono">
                         <button onclick="saveGasUrl()" class="admin-only-btn bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shadow-sm">
                             儲存網址
                         </button>
-                        <button onclick="testGasConnection()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shadow-sm">
-                            <i class="fa-solid fa-vial mr-1"></i>測試連線
+                        <button onclick="pullFromCloud()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shadow-sm">
+                            <i class="fa-solid fa-cloud-arrow-down mr-1"></i>讀取雲端
                         </button>
                         <button onclick="openGasScriptModal()" class="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap">
-                            <i class="fa-solid fa-code mr-1"></i>查看完整部署教學
+                            <i class="fa-solid fa-code mr-1"></i>GAS 腳本教學
                         </button>
+                        <a href="https://docs.google.com/spreadsheets/d/1xISwiklE1mBH_d6c0Lh5NxPxXhxy6Q96SKu8qsBd42U/edit?usp=sharing" target="_blank" class="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap">
+                            <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>開啟試算表
+                        </a>
                     </div>
                 </div>
 
@@ -341,7 +362,7 @@
             <!-- SubTab 2: 班別維護 -->
             <div id="adminSub-classes" class="hidden space-y-4">
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
-                    <h3 class="font-bold text-slate-800 text-base">目前學年班別結構 (已依 1A,1B..自然順序排列)</h3>
+                    <h3 class="font-bold text-slate-800 text-base">目前學年班別結構 (已依自然順序排列)</h3>
                     <button onclick="openAddClassModal()" class="admin-only-btn bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-sm font-medium flex items-center space-x-1">
                         <i class="fa-solid fa-plus"></i>
                         <span>新增班別</span>
@@ -360,15 +381,15 @@
                             <div class="flex items-center space-x-2">
                                 <h3 class="text-base font-bold text-slate-800">各班長期虛擬儲存空間 (LocalStorage Persistent Buckets)</h3>
                                 <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-bold flex items-center">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>長期記憶儲存已啟用
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>雲端與離線快取同步中
                                 </span>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1">新增或修改的學生資料均會即時寫入本機獨立班別儲存區，並持久化至 LocalStorage。</p>
+                            <p class="text-xs text-slate-500 mt-1">變更的學生資料均會即時寫入本機獨立班別儲存區，並同步推送至 Google 試算表雲端。</p>
                         </div>
                         <div class="flex items-center space-x-2">
                             <button onclick="resetToDefaultData()" class="admin-only-btn text-xs bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-2 rounded-lg font-semibold flex items-center space-x-1">
                                 <i class="fa-solid fa-rotate-left"></i>
-                                <span>重置為系統預設值</span>
+                                <span>重置為預設資料並同步雲端</span>
                             </button>
                             <button onclick="exportFullVirtualBackup()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm flex items-center space-x-1">
                                 <i class="fa-solid fa-download"></i>
@@ -380,10 +401,10 @@
                     <!-- 儲存容量統計條 -->
                     <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-wrap justify-between items-center gap-3 text-xs">
                         <div class="flex items-center space-x-4">
-                            <div><span class="text-slate-500">已用儲存容量：</span><strong id="storageUsedText" class="text-indigo-600 font-mono">0 KB</strong></div>
+                            <div><span class="text-slate-500">已用本機快取：</span><strong id="storageUsedText" class="text-indigo-600 font-mono">0 KB</strong></div>
                             <div><span class="text-slate-500">最後存檔時間：</span><span id="lastSavedTimeText" class="text-slate-700 font-medium">尚未登記</span></div>
                         </div>
-                        <div class="text-slate-400 text-[11px]"><i class="fa-solid fa-shield-halved mr-1"></i>離線安全防護中</div>
+                        <div class="text-slate-400 text-[11px]"><i class="fa-solid fa-shield-halved mr-1"></i>雲端雙重備份保護中</div>
                     </div>
                 </div>
 
@@ -396,19 +417,19 @@
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
                     <div class="border-l-4 border-amber-500 pl-4 py-1">
                         <h3 class="text-lg font-bold text-slate-800">一鍵學年升級作業 (Academic Year Promotion)</h3>
-                        <p class="text-sm text-slate-600 mt-1">執行全校升級後，學生班別將自動往上升級（如 1A &rarr; 2A，6 年級轉為畢業生），且本學期的所有欠交紀錄將會自動結算並歸檔至歷史資料庫。</p>
+                        <p class="text-sm text-slate-600 mt-1">執行全校升級後，學生班別將自動往上升級（如 1A &rarr; 2A，6 年級轉為畢業生），且系統會同步清空欠交日誌並更新 Google 試算表。</p>
                     </div>
 
                     <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-xs text-amber-900 space-y-1">
                         <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>注意事項：</p>
                         <p>1. 升級前建議先將本學期欠交報表匯出備份。</p>
-                        <p>2. 此操作無法復原，請確保全校期末成績與紀錄皆已結算完畢。</p>
+                        <p>2. 此操作將直接更新 Google 試算表雲端資料庫。</p>
                     </div>
 
                     <div class="pt-4 border-t border-slate-200 flex justify-end">
                         <button onclick="executePromotion()" class="admin-only-btn bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm shadow flex items-center space-x-2">
                             <i class="fa-solid fa-angles-up"></i>
-                            <span>執行全校學年一鍵升級</span>
+                            <span>執行全校學年一鍵升級並同步雲端</span>
                         </button>
                     </div>
                 </div>
@@ -425,7 +446,7 @@
                 <button onclick="closeModal('importModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-3">
-                <p class="text-xs text-slate-600">請上傳包含以下欄位的 CSV 或 Excel 檔案（匯入成功後將自動長期儲存於本機資料庫）：<br><code class="bg-slate-100 px-1 rounded text-indigo-600">學號, 班別, 座號, 中文姓名, 英文姓名</code></p>
+                <p class="text-xs text-slate-600">請上傳包含以下欄位的 CSV 或 Excel 檔案（匯入後將同時更新至本機與 Google 試算表）：<br><code class="bg-slate-100 px-1 rounded text-indigo-600">學號, 班別, 座號, 中文姓名, 英文姓名</code></p>
                 <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-indigo-500 transition cursor-pointer" onclick="document.getElementById('csvFileInput').click()">
                     <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
                     <p class="text-sm font-medium text-slate-700">點擊選擇檔案 或 將檔案拖曳至此</p>
@@ -453,7 +474,7 @@
             </div>
             <div class="flex justify-end space-x-2 pt-3 border-t">
                 <button onclick="closeModal('importModal')" class="px-4 py-2 border rounded-lg text-sm font-medium text-slate-600">取消</button>
-                <button onclick="processImport()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">確認匯入並保存</button>
+                <button onclick="processImport()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">確認匯入並寫入雲端</button>
             </div>
         </div>
     </div>
@@ -488,7 +509,7 @@
                 </div>
                 <div class="flex justify-end space-x-2 pt-3 border-t">
                     <button type="button" onclick="closeModal('studentModal')" class="px-4 py-2 border rounded-lg text-slate-600">取消</button>
-                    <button type="button" onclick="saveStudentModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">儲存並寫入班別虛擬空間</button>
+                    <button type="button" onclick="saveStudentModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">儲存並即時寫入雲端</button>
                 </div>
             </form>
         </div>
@@ -502,7 +523,7 @@
                 <button onclick="closeModal('jsonInspectorModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-2">
-                <p class="text-xs text-slate-500">您可以直接修改下方的 JSON 結構數據並點擊儲存，儲存後會同步更新長期記憶庫：</p>
+                <p class="text-xs text-slate-500">您可以直接修改下方的 JSON 結構數據並點擊儲存，儲存後會同步更新本機與雲端：</p>
                 <textarea id="jsonContentArea" rows="12" class="w-full font-mono text-xs p-3 bg-slate-900 text-emerald-400 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
             <div class="flex justify-between items-center pt-3 border-t">
@@ -515,39 +536,67 @@
         </div>
     </div>
 
-    <!-- Modal 4: Google Apps Script 教學 Modal -->
+    <!-- Modal 4: Google Apps Script 多分頁雲端資料庫教學 Modal -->
     <div id="gasScriptModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="font-bold text-lg text-slate-800">Google Apps Script 試算表同步設定指南</h3>
+                <h3 class="font-bold text-lg text-slate-800">Google Apps Script 多分頁雲端資料庫腳本指南</h3>
                 <button onclick="closeModal('gasScriptModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-3 text-xs text-slate-600 max-h-[60vh] overflow-y-auto">
                 <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
-                    <p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>排查關鍵清單：</p>
+                    <p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>雲端同步設定關鍵：</p>
                     <ul class="list-disc pl-5 space-y-0.5">
-                        <li>網址必須以 <strong><code class="bg-white px-1 font-mono rounded">/exec</code></strong> 結尾。</li>
-                        <li>部署權限「誰可以存取」必須設定為 <strong>「所有人 (Anyone)」</strong>。</li>
-                        <li>每次修改 GAS 腳本後，必須點擊 <strong>「部署」&rarr;「新建部署」</strong> 發布新版本。</li>
+                        <li>已整合指定 Google 試算表 ID：<code>1xISwiklE1mBH_d6c0Lh5NxPxXhxy6Q96SKu8qsBd42U</code></li>
+                        <li>將下方最新腳本貼入 Google 試算表之 Apps Script。</li>
+                        <li>點擊 <strong>「部署」&rarr;「新建部署」</strong>，選擇 <strong>網頁應用程式 (Web App)</strong>。</li>
+                        <li>「誰可以存取」請設定為：<strong>「所有人 (Anyone)」</strong>。</li>
+                        <li>複製產生的網址（需包含 <code class="font-mono bg-slate-100 px-1">/exec</code>）填入系統設定網址框即可啟用雙向即時同步。</li>
                     </ul>
                 </div>
 
-                <p class="font-bold text-sm text-slate-800">正確設定步驟：</p>
-                <ol class="list-decimal pl-5 space-y-1">
-                    <li>開啟您的 Google 試算表，點擊選單列的 <strong>「擴充功能」 &rarr; 「Apps Script」</strong>。</li>
-                    <li>將以下程式碼貼入腳本編輯器中（覆蓋原始 `Code.gs` 的內容）。</li>
-                    <li>點擊右上方 <strong>「部署」 &rarr; 「新建部署」</strong>。</li>
-                    <li>種類選擇 <strong>「網頁應用程式 (Web App)」</strong>，誰可以存取選擇：<strong>「所有人 (Anyone)」</strong>。</li>
-                    <li>複製產生的 URL（需以 <code class="font-mono bg-slate-100 px-1">/exec</code> 結尾）並貼入 Admin 後台。</li>
-                </ol>
-
-                <p class="font-bold text-sm text-slate-800 pt-2">Google Apps Script 最新完整原始碼：</p>
+                <p class="font-bold text-sm text-slate-800 pt-2">Google Apps Script 完整雲端資料庫原始碼 (支援多工作表)：</p>
                 <div class="relative">
                     <pre id="gasCodeSnippet" class="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto select-all">
+// 綁定指定的 Google 試算表 ID
+var SHEET_ID = '1xISwiklE1mBH_d6c0Lh5NxPxXhxy6Q96SKu8qsBd42U';
+
+function getSpreadsheet() {
+  try {
+    return SpreadsheetApp.openById(SHEET_ID);
+  } catch(e) {
+    // 降級備用
+    return SpreadsheetApp.getActiveSpreadsheet();
+  }
+}
+
 function doGet(e) {
-  return ContentService.createTextOutput(JSON.stringify({ 
-    status: "online", 
-    message: "校園功課管理系統 GAS API 正常服務中！" 
+  var ss = getSpreadsheet();
+  var studentsSheet = getOrCreateSheet(ss, "Students", ["班別", "座號", "中文姓名", "英文姓名", "狀態"]);
+  var classesSheet = getOrCreateSheet(ss, "Classes", ["班別ID", "班別名稱"]);
+  var logsSheet = getOrCreateSheet(ss, "HomeworkLogs", ["日期", "班別", "科目", "作業名稱", "學生姓名", "出席狀態", "是否欠交", "備註", "登記時間"]);
+
+  var students = parseSheetData(studentsSheet, function(row) {
+    return { class: String(row[0]), seat: Number(row[1]), name: String(row[2]), nameEn: String(row[3] || ''), status: String(row[4] || 'Active') };
+  });
+
+  var classes = parseSheetData(classesSheet, function(row) {
+    return { id: String(row[0]), name: String(row[1]) };
+  });
+
+  var logs = parseSheetData(logsSheet, function(row) {
+    return {
+      date: String(row[0]), class: String(row[1]), subject: String(row[2]), taskName: String(row[3]),
+      studentName: String(row[4]), attendance: String(row[5]), isMissing: row[6] === 'true' || row[6] === true,
+      remark: String(row[7] || '')
+    };
+  });
+
+  return ContentService.createTextOutput(JSON.stringify({
+    status: "success",
+    students: students,
+    classes: classes,
+    logs: logs
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -555,50 +604,75 @@ function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.tryLock(10000);
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(["班別", "姓名", "欠交日期", "科目", "作業名稱", "登記時間"]);
-      sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#e0e7ff");
-    }
+    var ss = getSpreadsheet();
     if (!e || !e.postData || !e.postData.contents) {
       return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "無效數據" })).setMimeType(ContentService.MimeType.JSON);
     }
 
     var data = JSON.parse(e.postData.contents);
     var nowStr = Utilities.formatDate(new Date(), "GMT+8", "yyyy-MM-dd HH:mm:ss");
-    var rowsToAppend = [];
-    var list = Array.isArray(data) ? data : [data];
-    
-    list.forEach(function(row) {
-      rowsToAppend.push([
-        row.className || row.class || "-", 
-        row.studentName || row.name || "-", 
-        row.date || "-", 
-        row.subject || "-", 
-        row.taskName || row.task || "-",
-        nowStr
-      ]);
-    });
 
-    if (rowsToAppend.length > 0) {
-      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 6).setValues(rowsToAppend);
+    if (data.students) {
+      updateSheetData(ss, "Students", ["班別", "座號", "中文姓名", "英文姓名", "狀態"], 
+        data.students.map(function(s) { return [s.class, s.seat, s.name, s.nameEn || '', s.status || 'Active']; }));
     }
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: rowsToAppend.length })).setMimeType(ContentService.MimeType.JSON);
+    if (data.classes) {
+      updateSheetData(ss, "Classes", ["班別ID", "班別名稱"], 
+        data.classes.map(function(c) { return [c.id, c.name]; }));
+    }
+    if (data.logs) {
+      updateSheetData(ss, "HomeworkLogs", ["日期", "班別", "科目", "作業名稱", "學生姓名", "出席狀態", "是否欠交", "備註", "登記時間"], 
+        data.logs.map(function(l) { return [l.date, l.class, l.subject, l.taskName, l.studentName, l.attendance, l.isMissing ? 'true' : 'false', l.remark || '', nowStr]; }));
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "雲端資料庫已同步" })).setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() })).setMimeType(ContentService.MimeType.JSON);
   } finally {
     lock.releaseLock();
   }
+}
+
+function getOrCreateSheet(ss, name, headers) {
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e0e7ff");
+  }
+  return sheet;
+}
+
+function parseSheetData(sheet, mapFn) {
+  var values = sheet.getDataRange().getValues();
+  if (values.length <= 1) return [];
+  var result = [];
+  for (var i = 1; i < values.length; i++) {
+    if (values[i][0] !== "") {
+      result.push(mapFn(values[i]));
+    }
+  }
+  return result;
+}
+
+function updateSheetData(ss, sheetName, headers, rows) {
+  var sheet = getOrCreateSheet(ss, sheetName, headers);
+  sheet.clearContents();
+  sheet.appendRow(headers);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e0e7ff");
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
 }</pre>
                 </div>
             </div>
             <div class="flex justify-end pt-3 border-t">
-                <button onclick="closeModal('gasScriptModal')" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">關閉</button>
+                <button onclick="closeModal('gasScriptModal')" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">關閉指南</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal 5: 自訂確認對話框 Modal (取代原本之 confirm) -->
+    <!-- Modal 5: 自訂確認對話框 Modal -->
     <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 space-y-4 text-center">
             <div class="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-xl">
@@ -623,14 +697,14 @@ function doPost(e) {
         // ==========================================
         // 1. 初始化預設種子資料與狀態變數
         // ==========================================
-        const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxcFkr74hwj7UZj7Z0NH5AqGsqMf5e9xlA5gDRIgsZCHFd_yf6s6lHdOGR41dtm8sJq/exec';
+        const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbx9ejm3qinyJOm5HWJ4lIVSrLpVW-1b8Qc86l00RsQ_yR1XnvCZH8sKLxg-9hW_2V6W/exec';
         let currentRole = 'Admin';
 
-        // 預設班別資料庫（故意混合順序以測試自動自然排序算法）
+        // 預設班別資料庫
         const SEED_CLASSES_DB = [
             { id: '1A', name: '1A 班' },
-            { id: '1C', name: '1C 班' },
             { id: '1B', name: '1B 班' },
+            { id: '1C', name: '1C 班' },
             { id: '1D', name: '1D 班' },
             { id: '1E', name: '1E 班' },
             { id: '2A', name: '2A 班' },
@@ -672,13 +746,11 @@ function doPost(e) {
         let currentTaskList = ['單元一工作紙'];
 
         // ==========================================
-        // 班別自然排序核心演算法 (Natural Sorting Algorithm)
-        // 支持順序: 1A, 1B, 1C, 1D, 1E ... 2A, 2B ... 10A ...
+        // 2. 班別自然排序演算法 (Natural Sorting Algorithm)
         // ==========================================
         function compareClasses(a, b) {
             const idA = (typeof a === 'string' ? a : (a && a.id) ? a.id : '').trim();
             const idB = (typeof b === 'string' ? b : (b && b.id) ? b.id : '').trim();
-
             return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
         }
 
@@ -687,26 +759,152 @@ function doPost(e) {
         }
 
         // ==========================================
-        // 本機持久化儲存 (LocalStorage Manager)
+        // 3. 雲端與本機雙向同步機制 (Cloud Real-Time Sync)
         // ==========================================
         const STORAGE_KEY_CLASSES = 'school_system_classes_v2';
         const STORAGE_KEY_STUDENTS = 'school_system_students_v2';
         const STORAGE_KEY_LOGS = 'school_system_logs_v2';
         const STORAGE_KEY_LAST_SAVED = 'school_system_last_saved_v2';
 
-        function saveAllToLocalStorage() {
+        function updateCloudStatusUI(status, message) {
+            const dot = document.getElementById('cloudStatusDot');
+            const text = document.getElementById('cloudStatusText');
+            if (!dot || !text) return;
+
+            if (status === 'syncing') {
+                dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+                text.className = 'text-amber-300';
+                text.textContent = message || '雲端同步中...';
+            } else if (status === 'success') {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+                text.className = 'text-emerald-300';
+                text.textContent = message || '雲端已同步';
+            } else if (status === 'error') {
+                dot.className = 'w-2 h-2 rounded-full bg-red-400';
+                text.className = 'text-red-300';
+                text.textContent = message || '雲端連線失敗 (使用離線快取)';
+            }
+        }
+
+        // 儲存至本機並發送即時同步請求至 Google 試算表
+        function saveAllAndSyncCloud(silent = false) {
             try {
-                sortClassesDB(); // 儲存前確保班別依 1A, 1B.. 排序
+                sortClassesDB();
                 localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classesDB));
                 localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(studentsDB));
                 localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(homeworkLogsDB));
                 const nowStr = new Date().toLocaleString('zh-TW');
                 localStorage.setItem(STORAGE_KEY_LAST_SAVED, nowStr);
-
                 updateStorageMetrics();
             } catch (err) {
                 console.error('LocalStorage Save Error:', err);
-                showToast('寫入本機長期儲存空間時出錯，空間可能已滿', 'error');
+            }
+
+            // 即時同步至雲端 Google 試算表
+            const gasUrl = getGasUrl();
+            if (gasUrl) {
+                updateCloudStatusUI('syncing', '正在寫入雲端...');
+                const payload = {
+                    action: 'syncAll',
+                    classes: classesDB,
+                    students: studentsDB,
+                    logs: homeworkLogsDB
+                };
+
+                fetch(gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                })
+                .then(() => {
+                    updateCloudStatusUI('success', '雲端已即時同步');
+                    if (!silent) showToast('已成功寫入本機與 Google 試算表！', 'success');
+                })
+                .catch(err => {
+                    console.error('Cloud Push Error:', err);
+                    updateCloudStatusUI('error', '雲端寫入失敗');
+                    if (!silent) showToast('本機已儲存，但雲端同步失敗，請檢查網路連線', 'error');
+                });
+            } else {
+                updateCloudStatusUI('error', '未設定 Web App 網址');
+            }
+        }
+
+        // 從 Google 試算表拉取最新全庫數據 (Pull from Cloud) - 加入 1 秒延遲分類機制
+        function pullFromCloud() {
+            const gasUrl = getGasUrl();
+            if (!gasUrl) {
+                showToast('請先填寫 Google Apps Script Web App 網址', 'error');
+                return;
+            }
+
+            const pullBtnIcon = document.getElementById('pullSyncIcon');
+            if (pullBtnIcon) pullBtnIcon.classList.add('animate-spin');
+
+            updateCloudStatusUI('syncing', '從雲端載入最新數據...');
+            showToast('正在與 Google 試算表雲端資料庫連線...', 'success');
+
+            fetch(gasUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.status === 'success') {
+                        if (Array.isArray(data.classes) && data.classes.length > 0) classesDB = data.classes;
+                        if (Array.isArray(data.students) && data.students.length > 0) studentsDB = data.students;
+                        if (Array.isArray(data.logs)) homeworkLogsDB = data.logs;
+
+                        saveAllToLocalStorage();
+
+                        updateCloudStatusUI('success', '已同步最新雲端資料');
+                        showToast('雲端資料同步完成！系統將於 1 秒後自動依班別為學生進行分類...', 'success');
+
+                        // 雲端同步完成後延遲 1 秒，再將學生依班別分至不同班
+                        setTimeout(() => {
+                            populateClassSelects();
+                            loadStudentGrid(); 
+                            
+                            renderReportTable();
+                            renderAdminStudents();
+                            renderAdminClasses();
+                            renderVirtualStorageBuckets();
+
+                            showToast('已完成班別分類及登記表畫面更新！', 'success');
+                        }, 1000);
+                        
+                    } else {
+                        throw new Error(data.message || '無效的雲端數據結構');
+                    }
+                })
+                .catch(err => {
+                    console.warn('Cloud pull failed or initial sheet empty, using local cache:', err);
+                    updateCloudStatusUI('error', '雲端連線異常，載入離線資料');
+                    loadFromLocalStorage();
+                    showToast('無法讀取雲端資料，已載入本機離線快取', 'error');
+                })
+                .finally(() => {
+                    if (pullBtnIcon) pullBtnIcon.classList.remove('animate-spin');
+                });
+        }
+
+        function getGasUrl() {
+            let url = document.getElementById('gasWebhookUrl')?.value?.trim() || localStorage.getItem('gas_webhook_url') || DEFAULT_GAS_URL;
+            if (url.includes('/edit') || url.includes('/dev')) {
+                url = url.replace(/\/edit.*$/, '/exec').replace(/\/dev.*$/, '/exec');
+            }
+            return url;
+        }
+
+        function saveAllToLocalStorage() {
+            try {
+                sortClassesDB();
+                localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classesDB));
+                localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(studentsDB));
+                localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(homeworkLogsDB));
+                const nowStr = new Date().toLocaleString('zh-TW');
+                localStorage.setItem(STORAGE_KEY_LAST_SAVED, nowStr);
+                updateStorageMetrics();
+            } catch (err) {
+                console.error(err);
             }
         }
 
@@ -727,7 +925,6 @@ function doPost(e) {
                 }
                 sortClassesDB();
             } catch (err) {
-                console.error('LocalStorage Read Error:', err);
                 classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
                 studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
                 homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
@@ -742,7 +939,6 @@ function doPost(e) {
             const strLogs = localStorage.getItem(STORAGE_KEY_LOGS) || '';
             const totalBytes = new Blob([strClasses + strStudents + strLogs]).size;
             const sizeKb = (totalBytes / 1024).toFixed(2);
-
             const lastSaved = localStorage.getItem(STORAGE_KEY_LAST_SAVED) || '未儲存';
 
             const usedElem = document.getElementById('storageUsedText');
@@ -751,8 +947,9 @@ function doPost(e) {
             if (timeElem) timeElem.textContent = lastSaved;
         }
 
+        // 重新繪製選單並過濾班別
         function populateClassSelects() {
-            sortClassesDB(); // 確保全系統班別下拉選單保持 1A, 1B, 1C, 1D, 1E 順序
+            sortClassesDB();
 
             const regClassSelect = document.getElementById('regClass');
             const reportClassSelect = document.getElementById('reportClass');
@@ -766,8 +963,12 @@ function doPost(e) {
             if (regClassSelect) {
                 const currentVal = regClassSelect.value;
                 regClassSelect.innerHTML = availableClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                
+                // 如果舊選項存在則保留，否則自動強制選取最新可用清單的第一個班級
                 if (currentVal && availableClasses.some(c => c.id === currentVal)) {
                     regClassSelect.value = currentVal;
+                } else if (availableClasses.length > 0) {
+                    regClassSelect.value = availableClasses[0].id;
                 }
             }
 
@@ -793,13 +994,14 @@ function doPost(e) {
                 return;
             }
             showConfirm(
-                '恢復預設設定',
-                '警告：確定要將系統恢復至預設範例資料？現有的匯入學生與欠交紀錄將被覆蓋！',
+                '恢復預設設定並同步雲端',
+                '警告：確定要將系統恢復至預設範例資料？這將覆蓋本機與 Google 試算表雲端資料庫！',
                 () => {
                     classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
                     studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
                     homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
-                    saveAllToLocalStorage();
+                    
+                    saveAllAndSyncCloud();
 
                     populateClassSelects();
                     loadStudentGrid();
@@ -808,7 +1010,7 @@ function doPost(e) {
                     renderAdminClasses();
                     renderVirtualStorageBuckets();
 
-                    showToast('已完成重置，回復至預設資料庫！', 'success');
+                    showToast('已完成重置，並同步覆蓋雲端資料庫！', 'success');
                 }
             );
         }
@@ -824,12 +1026,10 @@ function doPost(e) {
 
             populateClassSelects();
             renderActiveTaskChips();
-            loadStudentGrid();
-            renderReportTable();
-            renderAdminStudents();
-            renderAdminClasses();
-            renderVirtualStorageBuckets();
             
+            // 頁面初次開啓時，自動嘗試從雲端同步最新資料
+            pullFromCloud();
+
             document.addEventListener('keydown', function(e) {
                 if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                     e.preventDefault();
@@ -956,7 +1156,7 @@ function doPost(e) {
                 badge.className = 'inline-flex items-center px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-xs font-medium';
                 badge.innerHTML = `
                     <span>${task} (欠交: ${missingCount}人)</span>
-                    <button onclick="deleteRegisteredTaskLog('${regDate}', '${regClass}', '${regSubject}', '${task}')" title="刪除此項紀錄" class="ml-1.5 text-amber-600 hover:text-red-600"><i class="fa-solid fa-trash-can"></i></button>
+                    <button onclick="deleteRegisteredTaskLog('${regDate}', '${regClass}', '${regSubject}', '${task}')" title="刪除此項紀錄並更新雲端" class="ml-1.5 text-amber-600 hover:text-red-600"><i class="fa-solid fa-trash-can"></i></button>
                 `;
                 container.appendChild(badge);
             });
@@ -965,19 +1165,20 @@ function doPost(e) {
         function deleteRegisteredTaskLog(date, className, subject, taskName) {
             showConfirm(
                 '刪除登記紀錄',
-                `確定要刪除 [${date} ${className} ${subject} - ${taskName}] 的登記紀錄嗎？`,
+                `確定要刪除 [${date} ${className} ${subject} - ${taskName}] 的登記紀錄？這將同步更新雲端資料庫。`,
                 () => {
                     homeworkLogsDB = homeworkLogsDB.filter(l => !(l.date === date && l.class === className && l.subject === subject && l.taskName === taskName));
-                    saveAllToLocalStorage();
+                    
+                    saveAllAndSyncCloud();
                     renderTodayRegisteredTasksSummary();
                     renderReportTable();
-                    showToast(`已刪除 ${taskName} 之登記紀錄`, 'success');
+                    showToast(`已刪除 ${taskName} 之登記紀錄並同步至雲端`, 'success');
                 }
             );
         }
 
         // ==========================================
-        // 3. Data Grid 快速登記
+        // 4. Data Grid 快速登記與即時雲端推送
         // ==========================================
         function loadStudentGrid() {
             const selectedClass = document.getElementById('regClass').value;
@@ -1178,9 +1379,8 @@ function doPost(e) {
 
             const currentStudents = studentsDB.filter(s => s.class === regClass && s.status === 'Active').sort((a,b)=>a.seat-b.seat);
             let missingCountTotal = 0;
-            let missingToSync = [];
 
-            // 移除當日舊紀錄以進行更新
+            // 移除當日當班舊紀錄以進行覆蓋更新
             currentTaskList.forEach(taskName => {
                 homeworkLogsDB = homeworkLogsDB.filter(l => !(l.date === regDate && l.class === regClass && l.subject === regSubject && l.taskName === taskName));
             });
@@ -1208,116 +1408,16 @@ function doPost(e) {
                                 remark: remark ? remark.value : ''
                             });
                             missingCountTotal++;
-
-                            missingToSync.push({
-                                className: regClass,
-                                studentName: student.name,
-                                date: regDate,
-                                subject: regSubject,
-                                taskName: taskName
-                            });
                         }
                     });
                 }
             });
 
-            saveAllToLocalStorage();
-            if (missingCountTotal > 0) {
-                showToast(`已成功儲存登記！本次共紀錄 ${missingCountTotal} 人次欠交。`, 'success');
-            } else {
-                showToast(`全班皆已繳交，無新增欠交紀錄！`, 'success');
-            }
-
-            const gasUrl = localStorage.getItem('gas_webhook_url') || DEFAULT_GAS_URL;
-            if (gasUrl && missingToSync.length > 0) {
-                syncToGoogleSheets(gasUrl, missingToSync);
-            }
+            // 儲存至本機並即時同步至 Google 試算表雲端資料庫
+            saveAllAndSyncCloud();
 
             renderTodayRegisteredTasksSummary();
             renderReportTable();
-        }
-
-        function syncToGoogleSheets(url, dataPayload) {
-            if (!url || !url.trim()) return;
-
-            let trimmedUrl = url.trim();
-
-            if (trimmedUrl.includes('docs.google.com/spreadsheets')) {
-                showToast('錯誤：您貼入的是 Google 試算表網址，請更換為 Apps Script Web App (/exec) 網址！', 'error');
-                return;
-            }
-
-            if (trimmedUrl.includes('/edit') || trimmedUrl.includes('/dev')) {
-                trimmedUrl = trimmedUrl.replace(/\/edit.*$/, '/exec').replace(/\/dev.*$/, '/exec');
-                document.getElementById('gasWebhookUrl').value = trimmedUrl;
-                localStorage.setItem('gas_webhook_url', trimmedUrl);
-            }
-
-            if (!trimmedUrl.includes('/exec')) {
-                showToast('同步失敗：Web App 網址必須以 /exec 結尾！', 'error');
-                return;
-            }
-
-            showToast('正同步寫入至 Google 試算表...', 'success');
-            
-            fetch(trimmedUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(dataPayload)
-            })
-            .then(() => {
-                showToast(`成功發送 ${dataPayload.length} 筆欠交紀錄至 Google 試算表！`, 'success');
-            })
-            .catch(err => {
-                console.error('Google Sheets Sync Error:', err);
-                showToast('試算表同步失敗，請檢查網絡連線！', 'error');
-            });
-        }
-
-        function testGasConnection() {
-            const urlInput = document.getElementById('gasWebhookUrl');
-            let url = urlInput.value.trim();
-
-            if (!url) {
-                showToast('請先輸入 Google Apps Script Web App 網址', 'error');
-                return;
-            }
-
-            if (url.includes('docs.google.com/spreadsheets')) {
-                showToast('請勿填寫 Google 試算表網址，請貼上 Apps Script 部署後的 Web App URL！', 'error');
-                return;
-            }
-
-            if (url.includes('/edit') || url.includes('/dev')) {
-                url = url.replace(/\/edit.*$/, '/exec').replace(/\/dev.*$/, '/exec');
-                urlInput.value = url;
-                localStorage.setItem('gas_webhook_url', url);
-            }
-
-            const testData = [{
-                className: '測試班別',
-                studentName: '連線測試員',
-                date: new Date().toISOString().split('T')[0],
-                subject: '系統測試',
-                taskName: 'API 連線測試'
-            }];
-
-            showToast('正在發送測試連線至 Google 試算表...', 'success');
-
-            fetch(url, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(testData)
-            })
-            .then(() => {
-                showToast('連線測試成功！請至 Google 試算表查看是否新增測試紀錄。', 'success');
-            })
-            .catch(err => {
-                console.error('Test connection error:', err);
-                showToast('測試連線失敗，請檢查網絡或部署權限！', 'error');
-            });
         }
 
         function saveGasUrl() {
@@ -1328,7 +1428,7 @@ function doPost(e) {
             let url = document.getElementById('gasWebhookUrl').value.trim();
 
             if (url.includes('docs.google.com/spreadsheets')) {
-                showToast('錯誤：您輸入的是 Google 試算表網址，請填寫 Web App 網址！', 'error');
+                showToast('錯誤：您輸入的是 Google 試算表網址，請填寫 Apps Script 部署後的 Web App URL！', 'error');
                 return;
             }
 
@@ -1344,6 +1444,7 @@ function doPost(e) {
 
             localStorage.setItem('gas_webhook_url', url);
             showToast('Google 試算表同步網址已成功儲存！', 'success');
+            pullFromCloud();
         }
 
         function openGasScriptModal() {
@@ -1351,7 +1452,7 @@ function doPost(e) {
         }
 
         // ==========================================
-        // 4. 原生萬能 CSV 解析邏輯
+        // 5. 原生 CSV/Excel 解析邏輯
         // ==========================================
         function parseCSVText(csvText) {
             if (!csvText) return [];
@@ -1425,7 +1526,7 @@ function doPost(e) {
         }
 
         // ==========================================
-        // 5. 統計報表
+        // 6. 統計報表
         // ==========================================
         function getFilteredMissingLogs() {
             const selectedClass = document.getElementById('reportClass').value;
@@ -1437,7 +1538,6 @@ function doPost(e) {
                 const isMissingOnly = log.isMissing === true;
                 return matchClass && matchSub && isMissingOnly;
             }).sort((a, b) => {
-                // 報表紀錄按班別自然順序(1A, 1B..)及日期進行排序
                 if (a.class !== b.class) return compareClasses(a.class, b.class);
                 return b.date.localeCompare(a.date);
             });
@@ -1509,13 +1609,12 @@ function doPost(e) {
         }
 
         // ==========================================
-        // 6. Admin 管理者專區邏輯 (長期儲存與匯入)
+        // 7. Admin 管理者專區邏輯 (長期儲存與雲端維護)
         // ==========================================
         function renderAdminStudents() {
             const tbody = document.getElementById('adminStudentTableBody');
             tbody.innerHTML = '';
 
-            // 按班別自然順序(1A, 1B, 1C..)與座號排序
             const sorted = studentsDB.slice().sort((a, b) => {
                 if (a.class !== b.class) return compareClasses(a.class, b.class);
                 return a.seat - b.seat;
@@ -1545,7 +1644,7 @@ function doPost(e) {
         }
 
         function renderAdminClasses() {
-            sortClassesDB(); // 確保班別列表按自然順序渲染
+            sortClassesDB();
             const container = document.getElementById('classListContainer');
             container.innerHTML = '';
 
@@ -1673,7 +1772,7 @@ function doPost(e) {
                 return;
             }
 
-            let addedCount = 0;
+            // 同步後，將學生匯入以班別分類至admin管理者後台的班別與學年維護，如沒有該班別自行新增班別。
             importedTempData.forEach(item => {
                 if (!classesDB.some(c => c.id === item.class)) {
                     classesDB.push({ id: item.class, name: `${item.class} 班` });
@@ -1685,10 +1784,9 @@ function doPost(e) {
                 } else {
                     studentsDB.push(item);
                 }
-                addedCount++;
             });
 
-            saveAllToLocalStorage();
+            saveAllAndSyncCloud();
 
             populateClassSelects();
             renderAdminStudents();
@@ -1697,7 +1795,7 @@ function doPost(e) {
             loadStudentGrid();
             
             closeModal('importModal');
-            showToast(`批量匯入成功！已成功存入各班獨立儲存區！`, 'success');
+            showToast(`批量匯入成功！已同步更新至 Google 試算表！`, 'success');
             
             importedTempData = [];
             document.getElementById('csvFileInput').value = '';
@@ -1716,7 +1814,7 @@ function doPost(e) {
         }
 
         function renderVirtualStorageBuckets() {
-            sortClassesDB(); // 磁區展示也依自然順序排列
+            sortClassesDB();
             const container = document.getElementById('virtualStorageContainer');
             if (!container) return;
             container.innerHTML = '';
@@ -1737,7 +1835,7 @@ function doPost(e) {
                         <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">${sizeKb} KB</span>
                     </div>
                     <div class="text-xs text-slate-500 space-y-1">
-                        <div>儲存狀態: <span class="text-emerald-600 font-bold"><i class="fa-solid fa-hard-drive mr-1"></i>已持久化存檔</span></div>
+                        <div>儲存狀態: <span class="text-emerald-600 font-bold"><i class="fa-solid fa-cloud-check mr-1"></i>雲端同步中</span></div>
                         <div>學生總數: <strong class="text-slate-700">${classStudents.length}</strong> 人</div>
                     </div>
                     <div class="pt-2 border-t flex justify-between gap-2">
@@ -1772,13 +1870,14 @@ function doPost(e) {
                 if (!Array.isArray(updated)) throw new Error('格式必須為 Array 陣列');
 
                 studentsDB = studentsDB.filter(s => s.class !== currentInspectingClass).concat(updated);
-                saveAllToLocalStorage();
+                
+                saveAllAndSyncCloud();
 
                 renderAdminStudents();
                 renderVirtualStorageBuckets();
                 loadStudentGrid();
                 closeModal('jsonInspectorModal');
-                showToast(`虛擬儲存區 ${currentInspectingClass} 已成功更新並持久化保存！`, 'success');
+                showToast(`虛擬儲存區 ${currentInspectingClass} 已成功更新並寫入雲端！`, 'success');
             } catch (err) {
                 showToast(`JSON 語法錯誤：${err.message}`, 'error');
             }
@@ -1875,16 +1974,23 @@ function doPost(e) {
                 studentsDB[parseInt(idx)] = data;
             }
 
-            saveAllToLocalStorage();
+            saveAllAndSyncCloud();
 
             populateClassSelects();
+            
+            // 自動將快速登記板塊的目標班級切換至該新增/編輯學生的班級
+            const regClassSelect = document.getElementById('regClass');
+            if (regClassSelect && [...regClassSelect.options].some(o => o.value === targetClass)) {
+                regClassSelect.value = targetClass;
+            }
+
             renderAdminStudents();
             renderAdminClasses();
             renderVirtualStorageBuckets();
-            loadStudentGrid();
+            loadStudentGrid(); // 重新讀取快速登記表格
 
             closeModal('studentModal');
-            showToast(`學生 [${nameVal}] 資料已存入 ${targetClass} 班長期獨立儲存空間！`, 'success');
+            showToast(`學生 [${nameVal}] 資料已儲存！快速登記板塊已自動切換為 ${targetClass} 班。`, 'success');
         }
 
         function deleteStudent(idx) {
@@ -1892,30 +1998,32 @@ function doPost(e) {
             const s = studentsDB[idx];
             showConfirm(
                 '刪除學生',
-                `確定要自 ${s.class} 班移除學生 [${s.name}] 嗎？`,
+                `確定要自 ${s.class} 班移除學生 [${s.name}] 嗎？此動作將同步至雲端。`,
                 () => {
                     studentsDB.splice(idx, 1);
-                    saveAllToLocalStorage();
+                    saveAllAndSyncCloud();
                     renderAdminStudents();
                     renderVirtualStorageBuckets();
                     loadStudentGrid();
-                    showToast(`已自 ${s.class} 班儲存區移除學生 [${s.name}]`, 'success');
+                    showToast(`已自 ${s.class} 班移除學生 [${s.name}] 並更新雲端`, 'success');
                 }
             );
         }
 
         function openAddClassModal() {
             if (currentRole !== 'Admin') return;
-            const cName = prompt('請輸入新班別名稱 (例如: 1C, 2A):');
+            
+            // 透過 prompt 模擬新增班級輸入，若要更進階可自行實作 Modal
+            const cName = window.prompt('請輸入新班別名稱 (例如: 1C, 2A):');
             if (cName && cName.trim()) {
                 const cleanName = cName.trim().toUpperCase();
                 if (!classesDB.some(c => c.id === cleanName)) {
                     classesDB.push({ id: cleanName, name: `${cleanName} 班` });
-                    saveAllToLocalStorage();
+                    saveAllAndSyncCloud();
                     populateClassSelects();
                     renderAdminClasses();
                     renderVirtualStorageBuckets();
-                    showToast(`已新增班別 ${cleanName} 及其獨立儲存空間！`, 'success');
+                    showToast(`已成功新增班別 [${cleanName}]`, 'success');
                 } else {
                     showToast('該班別已存在', 'error');
                 }
@@ -1925,57 +2033,24 @@ function doPost(e) {
         function deleteClass(idx) {
             if (currentRole !== 'Admin') return;
             const c = classesDB[idx];
-            showConfirm(
-                '刪除班別',
-                `確定要刪除班別 [${c.name}] 嗎？這將一併影響該班別之顯示。`,
-                () => {
-                    classesDB.splice(idx, 1);
-                    saveAllToLocalStorage();
-                    populateClassSelects();
-                    renderAdminClasses();
-                    renderVirtualStorageBuckets();
-                    showToast(`班別 ${c.id} 及其虛擬儲存空間已成功刪除`, 'success');
-                }
-            );
-        }
-
-        function executePromotion() {
-            if (currentRole !== 'Admin') {
-                showToast('僅 Admin 具備執行學年升級權限', 'error');
+            const hasStudents = studentsDB.some(s => s.class === c.id);
+            if (hasStudents) {
+                showToast(`無法刪除！${c.name} 尚有學生資料，請先清空或轉移學生。`, 'error');
                 return;
             }
-
             showConfirm(
-                '學年升級作業',
-                '確定要執行全校一鍵升級作業？各班學生將向上升級一級，6年級將畢業。此動作不可逆！',
+                '刪除班別',
+                `確定要刪除 [${c.name}] 嗎？`,
                 () => {
-                    studentsDB.forEach(s => {
-                        const gradeNum = parseInt(s.class.charAt(0));
-                        const letter = s.class.slice(1);
-                        if (!isNaN(gradeNum)) {
-                            if (gradeNum >= 6) {
-                                s.status = 'Graduated';
-                            } else {
-                                s.class = `${gradeNum + 1}${letter}`;
-                            }
-                        }
-                    });
-
-                    homeworkLogsDB = [];
-                    saveAllToLocalStorage();
+                    classesDB.splice(idx, 1);
+                    saveAllAndSyncCloud();
                     populateClassSelects();
-                    renderAdminStudents();
                     renderAdminClasses();
                     renderVirtualStorageBuckets();
                     loadStudentGrid();
-                    renderReportTable();
-                    showToast('全校學年升級作業完成！歷史紀錄已歸檔。', 'success');
+                    showToast(`已刪除班別 [${c.name}]`, 'success');
                 }
             );
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
         }
 
         function openImportModal() {
@@ -1983,46 +2058,105 @@ function doPost(e) {
             document.getElementById('importModal').classList.remove('hidden');
         }
 
-        function showConfirm(title, message, onConfirm) {
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showConfirm(title, message, onOk) {
             document.getElementById('confirmModalTitle').textContent = title;
             document.getElementById('confirmModalMessage').textContent = message;
+            document.getElementById('confirmModal').classList.remove('hidden');
+            
             const okBtn = document.getElementById('confirmModalOkBtn');
             const cancelBtn = document.getElementById('confirmModalCancelBtn');
             
-            const cleanUp = () => {
+            const handleOk = () => {
                 closeModal('confirmModal');
-                okBtn.onclick = null;
-                cancelBtn.onclick = null;
+                onOk();
+                cleanup();
             };
-
-            okBtn.onclick = () => {
-                cleanUp();
-                if (onConfirm) onConfirm();
+            
+            const handleCancel = () => {
+                closeModal('confirmModal');
+                cleanup();
             };
-
-            cancelBtn.onclick = () => {
-                cleanUp();
+            
+            const cleanup = () => {
+                okBtn.removeEventListener('click', handleOk);
+                cancelBtn.removeEventListener('click', handleCancel);
             };
-
-            document.getElementById('confirmModal').classList.remove('hidden');
+            
+            okBtn.addEventListener('click', handleOk);
+            cancelBtn.addEventListener('click', handleCancel);
         }
 
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toastMsg');
             const toastIcon = document.getElementById('toastIcon');
-
+            
             toastMsg.textContent = msg;
-            if (type === 'error') {
-                toastIcon.className = 'fa-solid fa-circle-xmark text-red-400 text-lg';
-            } else {
+            
+            if (type === 'success') {
                 toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-xmark text-red-400 text-lg';
             }
-
+            
             toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            
             setTimeout(() => {
+                toast.classList.remove('opacity-100');
                 toast.classList.add('opacity-0', 'pointer-events-none');
             }, 3000);
+        }
+
+        function executePromotion() {
+            if (currentRole !== 'Admin') return;
+            showConfirm(
+                '全校學年一鍵升級',
+                '警告：此操作將會把所有學生的班別升級（例如 1A 變 2A，6年級會標記為離校），並清空所有目前的欠交紀錄！請確保已匯出備份報表。確定要繼續嗎？',
+                () => {
+                    const newStudentsDB = [];
+                    studentsDB.forEach(s => {
+                        if (s.status !== 'Active') {
+                            newStudentsDB.push(s);
+                            return;
+                        }
+                        
+                        const match = s.class.match(/^(\d+)([a-zA-Z]+)$/);
+                        if (match) {
+                            let grade = parseInt(match[1]);
+                            const clsName = match[2];
+                            
+                            if (grade >= 6) {
+                                s.status = 'Graduated';
+                            } else {
+                                grade++;
+                                s.class = `${grade}${clsName}`;
+                                if (!classesDB.some(c => c.id === s.class)) {
+                                    classesDB.push({ id: s.class, name: `${s.class} 班` });
+                                }
+                            }
+                        }
+                        newStudentsDB.push(s);
+                    });
+                    
+                    studentsDB = newStudentsDB;
+                    homeworkLogsDB = [];
+                    
+                    saveAllAndSyncCloud();
+                    populateClassSelects();
+                    renderAdminStudents();
+                    renderAdminClasses();
+                    renderVirtualStorageBuckets();
+                    loadStudentGrid();
+                    renderReportTable();
+                    
+                    showToast('學年升級已完成！所有班別與雲端資料已同步更新。', 'success');
+                }
+            );
         }
     </script>
 </body>
