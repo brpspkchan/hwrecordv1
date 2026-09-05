@@ -85,8 +85,8 @@
                     <input type="date" id="regDate" onchange="onRegContextChange()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">班別</label>
-                    <select id="regClass" onchange="onRegContextChange()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">班別 (已依 1A,1B..自然順序排列)</label>
+                    <select id="regClass" onchange="onRegContextChange()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold text-indigo-900">
                     </select>
                 </div>
                 <div>
@@ -231,7 +231,7 @@
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm flex justify-between items-center">
-                    <span>欠交學生明細紀錄 (僅顯示有欠交之學生)</span>
+                    <span>欠交學生明細紀錄 (僅顯示有欠交之學生，已按班別排序)</span>
                     <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded font-normal"><i class="fa-solid fa-filter mr-1"></i>已自動過濾「已繳交」紀錄</span>
                 </div>
                 <div class="overflow-x-auto">
@@ -341,8 +341,8 @@
             <!-- SubTab 2: 班別維護 -->
             <div id="adminSub-classes" class="hidden space-y-4">
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
-                    <h3 class="font-bold text-slate-800 text-base">目前學年班別結構 (2026/2027)</h3>
-                    <button onclick="openAddClassModal()" class="admin-only-btn bg-indigo-600 text-white px-3.5 py-2 rounded-lg text-sm font-medium flex items-center space-x-1">
+                    <h3 class="font-bold text-slate-800 text-base">目前學年班別結構 (已依 1A,1B..自然順序排列)</h3>
+                    <button onclick="openAddClassModal()" class="admin-only-btn bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-sm font-medium flex items-center space-x-1">
                         <i class="fa-solid fa-plus"></i>
                         <span>新增班別</span>
                     </button>
@@ -515,7 +515,7 @@
         </div>
     </div>
 
-    <!-- Modal 4: Google Apps Script 教學與程式碼 Modal -->
+    <!-- Modal 4: Google Apps Script 教學 Modal -->
     <div id="gasScriptModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
@@ -526,7 +526,7 @@
                 <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
                     <p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>排查關鍵清單：</p>
                     <ul class="list-disc pl-5 space-y-0.5">
-                        <li>網址必須以 <strong><code class="bg-white px-1 font-mono rounded">/exec</code></strong> 結尾，不能包含 <code class="bg-white px-1 font-mono rounded">/edit</code>、<code class="bg-white px-1 font-mono rounded">/dev</code> 或 <code class="bg-white px-1 font-mono rounded">docs.google.com/spreadsheets</code>。</li>
+                        <li>網址必須以 <strong><code class="bg-white px-1 font-mono rounded">/exec</code></strong> 結尾。</li>
                         <li>部署權限「誰可以存取」必須設定為 <strong>「所有人 (Anyone)」</strong>。</li>
                         <li>每次修改 GAS 腳本後，必須點擊 <strong>「部署」&rarr;「新建部署」</strong> 發布新版本。</li>
                     </ul>
@@ -537,10 +537,8 @@
                     <li>開啟您的 Google 試算表，點擊選單列的 <strong>「擴充功能」 &rarr; 「Apps Script」</strong>。</li>
                     <li>將以下程式碼貼入腳本編輯器中（覆蓋原始 `Code.gs` 的內容）。</li>
                     <li>點擊右上方 <strong>「部署」 &rarr; 「新建部署」</strong>。</li>
-                    <li>種類選擇 <strong>「網頁應用程式 (Web App)」</strong>。</li>
-                    <li>誰可以存取 (Who has access) 必須選擇：<strong>「所有人 (Anyone)」</strong>。</li>
-                    <li>點擊「部署」並授權存取後，複製產生的「網頁應用程式 URL」（需以 <code class="font-mono bg-slate-100 px-1">/exec</code> 結尾）。</li>
-                    <li>將複製的網址貼至 Admin 後台的輸入框中，點擊「儲存網址」並按「測試連線」。</li>
+                    <li>種類選擇 <strong>「網頁應用程式 (Web App)」</strong>，誰可以存取選擇：<strong>「所有人 (Anyone)」</strong>。</li>
+                    <li>複製產生的 URL（需以 <code class="font-mono bg-slate-100 px-1">/exec</code> 結尾）並貼入 Admin 後台。</li>
                 </ol>
 
                 <p class="font-bold text-sm text-slate-800 pt-2">Google Apps Script 最新完整原始碼：</p>
@@ -555,24 +553,19 @@ function doGet(e) {
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
-  lock.tryLock(10000); // 避免多人同時寫入衝突
+  lock.tryLock(10000);
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    
-    // 若工作表為空，自動建置表頭
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(["班別", "姓名", "欠交日期", "科目", "作業名稱", "登記時間"]);
       sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#e0e7ff");
     }
-    
     if (!e || !e.postData || !e.postData.contents) {
-      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "無效的 POST 數據" }))
-        .setMimeType(ContentService.MimeType.JSON);
+      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "無效數據" })).setMimeType(ContentService.MimeType.JSON);
     }
 
     var data = JSON.parse(e.postData.contents);
     var nowStr = Utilities.formatDate(new Date(), "GMT+8", "yyyy-MM-dd HH:mm:ss");
-    
     var rowsToAppend = [];
     var list = Array.isArray(data) ? data : [data];
     
@@ -590,13 +583,9 @@ function doPost(e) {
     if (rowsToAppend.length > 0) {
       sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 6).setValues(rowsToAppend);
     }
-    
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: rowsToAppend.length }))
-      .setMimeType(ContentService.MimeType.JSON);
-      
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: rowsToAppend.length })).setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() })).setMimeType(ContentService.MimeType.JSON);
   } finally {
     lock.releaseLock();
   }
@@ -609,13 +598,27 @@ function doPost(e) {
         </div>
     </div>
 
+    <!-- Modal 5: 自訂確認對話框 Modal (取代原本之 confirm) -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 space-y-4 text-center">
+            <div class="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="confirmModalTitle" class="font-bold text-lg text-slate-800">確認操作</h3>
+            <p id="confirmModalMessage" class="text-xs text-slate-600 leading-relaxed"></p>
+            <div class="flex space-x-2 pt-2">
+                <button id="confirmModalCancelBtn" class="w-1/2 px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50">取消</button>
+                <button id="confirmModalOkBtn" class="w-1/2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold">確認執行</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 全局提示 Toast -->
     <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center space-x-3 transition-opacity duration-300 opacity-0 pointer-events-none">
         <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
         <span id="toastMsg" class="text-sm font-medium">操作成功</span>
     </div>
 
-    <!-- JavaScript 系統邏輯碼 -->
     <script>
         // ==========================================
         // 1. 初始化預設種子資料與狀態變數
@@ -623,9 +626,13 @@ function doPost(e) {
         const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxcFkr74hwj7UZj7Z0NH5AqGsqMf5e9xlA5gDRIgsZCHFd_yf6s6lHdOGR41dtm8sJq/exec';
         let currentRole = 'Admin';
 
+        // 預設班別資料庫（故意混合順序以測試自動自然排序算法）
         const SEED_CLASSES_DB = [
             { id: '1A', name: '1A 班' },
+            { id: '1C', name: '1C 班' },
             { id: '1B', name: '1B 班' },
+            { id: '1D', name: '1D 班' },
+            { id: '1E', name: '1E 班' },
             { id: '2A', name: '2A 班' },
             { id: '2B', name: '2B 班' },
             { id: '6B', name: '6B 班' },
@@ -640,43 +647,21 @@ function doPost(e) {
             { class: '1A', seat: 5, name: '陳梓睿', nameEn: 'CHEN ZIRUI', status: 'Active' },
             { class: '1A', seat: 6, name: '張曦儀', nameEn: 'CHEUNG HEI YEE', status: 'Active' },
             { class: '1A', seat: 7, name: '蔡己瑜', nameEn: 'CHOI KEI YU', status: 'Active' },
-            { class: '1A', seat: 8, name: '許朗逸', nameEn: 'HUI LONG YAT LUCAS', status: 'Active' },
-            { class: '1A', seat: 9, name: '黎諾允', nameEn: 'LAI NOK WAN', status: 'Active' },
-            { class: '1A', seat: 10, name: '劉韋辛', nameEn: 'LAU WAI SAN', status: 'Active' },
-            { class: '1A', seat: 11, name: '梁家希', nameEn: 'LEUNG KA HEI', status: 'Active' },
-            { class: '1A', seat: 12, name: '李嘉雯', nameEn: 'LI KA MAN', status: 'Active' },
-            { class: '1A', seat: 13, name: '李宜洋', nameEn: 'LI YI YEUNG', status: 'Active' },
-            { class: '1A', seat: 14, name: '林景文', nameEn: 'LIN JING WEN KEVIN', status: 'Active' },
-            { class: '1A', seat: 15, name: '劉昕娜', nameEn: 'LIU YAN NA', status: 'Active' },
-            { class: '1A', seat: 16, name: '呂焯言', nameEn: 'LUI CHEUK YIN', status: 'Active' },
-            { class: '1A', seat: 17, name: '伍晉曦', nameEn: 'NG CHUN HEI', status: 'Active' },
-            { class: '1A', seat: 18, name: '伍穎莎', nameEn: 'NG WING SA', status: 'Active' },
+            { class: '1B', seat: 1, name: '何梓軒', nameEn: 'HO TSZ HIN', status: 'Active' },
+            { class: '1B', seat: 2, name: '古家豪', nameEn: 'KO KA HO', status: 'Active' },
+            { class: '1C', seat: 1, name: '林逸朗', nameEn: 'LAM YAT LONG', status: 'Active' },
+            { class: '1D', seat: 1, name: '麥子晴', nameEn: 'MAK TSZ CHING', status: 'Active' },
+            { class: '1E', seat: 1, name: '潘浩然', nameEn: 'POON HO YIN', status: 'Active' },
             { class: '6B', seat: 7, name: '梁樂兒', nameEn: 'LEUNG LOK YI', status: 'Active' },
             { class: '6B', seat: 8, name: '呂志偉', nameEn: 'LUI CHI WAI', status: 'Active' },
-            { class: '6B', seat: 9, name: '馬浩霖', nameEn: 'MA HO LAM', status: 'Active' },
-            { class: '6B', seat: 10, name: '吳卓彥', nameEn: 'NG CHEUK YIN', status: 'Active' },
-            { class: '6B', seat: 11, name: '吳峻一', nameEn: 'NG CHUN YAT', status: 'Active' },
-            { class: '6B', seat: 12, name: '吳日朗', nameEn: 'NG YAT LONG', status: 'Active' },
-            { class: '6B', seat: 13, name: '蘇暐騏', nameEn: 'SO WAI KI', status: 'Active' },
-            { class: '6B', seat: 14, name: '譚焯縈', nameEn: 'TAM CHEOK IENG', status: 'Active' },
-            { class: '6B', seat: 15, name: '徐懿朗', nameEn: 'TSUI YI LONG', status: 'Active' },
-            { class: '6B', seat: 16, name: '黃峻琛', nameEn: 'WONG CHUN SUM JAMES', status: 'Active' },
-            { class: '6B', seat: 17, name: '黃子健', nameEn: 'WONG LOUIS TSZ KIN', status: 'Active' },
-            { class: '6B', seat: 18, name: '黃劭軒', nameEn: 'WONG SIU HIN', status: 'Active' },
-            { class: '6B', seat: 19, name: '余沛霈', nameEn: 'YEE PUI PUI', status: 'Active' },
-            { class: '6B', seat: 20, name: '葉晴文', nameEn: 'YIP CHING MAN', status: 'Active' },
-            { class: '6C', seat: 1, name: '鄧洛宜', nameEn: 'DENG LOK YI', status: 'Active' },
-            { class: '6C', seat: 2, name: '馮千睿', nameEn: 'FUNG CHIN YUI', status: 'Active' },
-            { class: '6C', seat: 3, name: '馮兆禧', nameEn: 'FUNG SIU HEI', status: 'Active' },
-            { class: '6C', seat: 4, name: '馮影雪', nameEn: 'FUNG YING SUET SHIRLEY', status: 'Active' },
-            { class: '6C', seat: 5, name: '龔睿熙', nameEn: 'GONG YUI HEI', status: 'Active' }
+            { class: '6C', seat: 1, name: '鄧洛宜', nameEn: 'DENG LOK YI', status: 'Active' }
         ];
 
         const SEED_HOMEWORK_LOGS_DB = [
             { date: '2026-09-01', class: '1A', subject: '中文', taskName: '單元一工作紙', studentName: '陳芷晴', attendance: 'Present', isMissing: true, remark: '未帶作業' }
         ];
 
-        // 運行中資料庫 (由 LocalStorage 載入或使用種子資料)
+        // 運行中資料庫
         let classesDB = [];
         let studentsDB = [];
         let homeworkLogsDB = [];
@@ -686,7 +671,23 @@ function doPost(e) {
         // 目前正在編輯/登記的作業項目陣列
         let currentTaskList = ['單元一工作紙'];
 
-        // 1.5 本機持久化儲存 (LocalStorage Manager)
+        // ==========================================
+        // 班別自然排序核心演算法 (Natural Sorting Algorithm)
+        // 支持順序: 1A, 1B, 1C, 1D, 1E ... 2A, 2B ... 10A ...
+        // ==========================================
+        function compareClasses(a, b) {
+            const idA = (typeof a === 'string' ? a : (a && a.id) ? a.id : '').trim();
+            const idB = (typeof b === 'string' ? b : (b && b.id) ? b.id : '').trim();
+
+            return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+        }
+
+        function sortClassesDB() {
+            classesDB.sort(compareClasses);
+        }
+
+        // ==========================================
+        // 本機持久化儲存 (LocalStorage Manager)
         // ==========================================
         const STORAGE_KEY_CLASSES = 'school_system_classes_v2';
         const STORAGE_KEY_STUDENTS = 'school_system_students_v2';
@@ -695,6 +696,7 @@ function doPost(e) {
 
         function saveAllToLocalStorage() {
             try {
+                sortClassesDB(); // 儲存前確保班別依 1A, 1B.. 排序
                 localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classesDB));
                 localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(studentsDB));
                 localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(homeworkLogsDB));
@@ -722,13 +724,14 @@ function doPost(e) {
                     classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
                     studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
                     homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
-                    saveAllToLocalStorage();
                 }
+                sortClassesDB();
             } catch (err) {
                 console.error('LocalStorage Read Error:', err);
                 classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
                 studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
                 homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
+                sortClassesDB();
             }
             updateStorageMetrics();
         }
@@ -749,6 +752,8 @@ function doPost(e) {
         }
 
         function populateClassSelects() {
+            sortClassesDB(); // 確保全系統班別下拉選單保持 1A, 1B, 1C, 1D, 1E 順序
+
             const regClassSelect = document.getElementById('regClass');
             const reportClassSelect = document.getElementById('reportClass');
             const mStudentClassSelect = document.getElementById('mStudentClass');
@@ -787,26 +792,27 @@ function doPost(e) {
                 showToast('權限不足', 'error');
                 return;
             }
-            if (confirm('警告：確定要將系統恢復至預設範例資料？現有的匯入學生與欠交紀錄將被覆蓋！')) {
-                classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
-                studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
-                homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
-                saveAllToLocalStorage();
+            showConfirm(
+                '恢復預設設定',
+                '警告：確定要將系統恢復至預設範例資料？現有的匯入學生與欠交紀錄將被覆蓋！',
+                () => {
+                    classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
+                    studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
+                    homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
+                    saveAllToLocalStorage();
 
-                populateClassSelects();
-                loadStudentGrid();
-                renderReportTable();
-                renderAdminStudents();
-                renderAdminClasses();
-                renderVirtualStorageBuckets();
+                    populateClassSelects();
+                    loadStudentGrid();
+                    renderReportTable();
+                    renderAdminStudents();
+                    renderAdminClasses();
+                    renderVirtualStorageBuckets();
 
-                showToast('已完成重置，回復至預設資料庫！', 'success');
-            }
+                    showToast('已完成重置，回復至預設資料庫！', 'success');
+                }
+            );
         }
 
-        // ==========================================
-        // 2. 頁面載入與 Tab 導覽控管
-        // ==========================================
         window.onload = function() {
             loadFromLocalStorage();
 
@@ -957,13 +963,17 @@ function doPost(e) {
         }
 
         function deleteRegisteredTaskLog(date, className, subject, taskName) {
-            if (confirm(`確定要刪除 [${date} ${className} ${subject} - ${taskName}] 的登記紀錄嗎？`)) {
-                homeworkLogsDB = homeworkLogsDB.filter(l => !(l.date === date && l.class === className && l.subject === subject && l.taskName === taskName));
-                saveAllToLocalStorage();
-                renderTodayRegisteredTasksSummary();
-                renderReportTable();
-                showToast(`已刪除 ${taskName} 之登記紀錄`, 'success');
-            }
+            showConfirm(
+                '刪除登記紀錄',
+                `確定要刪除 [${date} ${className} ${subject} - ${taskName}] 的登記紀錄嗎？`,
+                () => {
+                    homeworkLogsDB = homeworkLogsDB.filter(l => !(l.date === date && l.class === className && l.subject === subject && l.taskName === taskName));
+                    saveAllToLocalStorage();
+                    renderTodayRegisteredTasksSummary();
+                    renderReportTable();
+                    showToast(`已刪除 ${taskName} 之登記紀錄`, 'success');
+                }
+            );
         }
 
         // ==========================================
@@ -1170,7 +1180,7 @@ function doPost(e) {
             let missingCountTotal = 0;
             let missingToSync = [];
 
-            // 先移除當日當班同科同項目的舊紀錄以利覆蓋更新
+            // 移除當日舊紀錄以進行更新
             currentTaskList.forEach(taskName => {
                 homeworkLogsDB = homeworkLogsDB.filter(l => !(l.date === regDate && l.class === regClass && l.subject === regSubject && l.taskName === taskName));
             });
@@ -1186,7 +1196,6 @@ function doPost(e) {
                         const chk = document.getElementById(`chk_${idx}_${tIdx}`);
                         const isMissing = chk ? chk.checked : false;
 
-                        // 只紀錄並儲存有欠交的學生資料
                         if (attendance === 'Present' && isMissing) {
                             homeworkLogsDB.push({
                                 date: regDate,
@@ -1229,10 +1238,7 @@ function doPost(e) {
         }
 
         function syncToGoogleSheets(url, dataPayload) {
-            if (!url || !url.trim()) {
-                showToast('尚未設定同步網址，跳過試算表同步。', 'error');
-                return;
-            }
+            if (!url || !url.trim()) return;
 
             let trimmedUrl = url.trim();
 
@@ -1265,7 +1271,7 @@ function doPost(e) {
             })
             .catch(err => {
                 console.error('Google Sheets Sync Error:', err);
-                showToast('試算表同步失敗，請檢查網路連線或 Apps Script 網址！', 'error');
+                showToast('試算表同步失敗，請檢查網絡連線！', 'error');
             });
         }
 
@@ -1306,11 +1312,11 @@ function doPost(e) {
                 body: JSON.stringify(testData)
             })
             .then(() => {
-                showToast('連線測試成功！請至 Google 試算表查看是否新增了一筆測試紀錄。', 'success');
+                showToast('連線測試成功！請至 Google 試算表查看是否新增測試紀錄。', 'success');
             })
             .catch(err => {
                 console.error('Test connection error:', err);
-                showToast('測試連線失敗，請檢查網路或部署權限是否設為「所有人」！', 'error');
+                showToast('測試連線失敗，請檢查網絡或部署權限！', 'error');
             });
         }
 
@@ -1322,7 +1328,7 @@ function doPost(e) {
             let url = document.getElementById('gasWebhookUrl').value.trim();
 
             if (url.includes('docs.google.com/spreadsheets')) {
-                showToast('錯誤：您輸入的是 Google 試算表網址，請填寫 Apps Script Web App 網址！', 'error');
+                showToast('錯誤：您輸入的是 Google 試算表網址，請填寫 Web App 網址！', 'error');
                 return;
             }
 
@@ -1349,9 +1355,7 @@ function doPost(e) {
         // ==========================================
         function parseCSVText(csvText) {
             if (!csvText) return [];
-            if (csvText.charCodeAt(0) === 0xFEFF) {
-                csvText = csvText.slice(1);
-            }
+            if (csvText.charCodeAt(0) === 0xFEFF) csvText = csvText.slice(1);
 
             let delimiter = ',';
             const firstLine = csvText.split(/\r\n|\n|\r/)[0] || '';
@@ -1430,8 +1434,12 @@ function doPost(e) {
             return homeworkLogsDB.filter(log => {
                 const matchClass = (selectedClass === 'ALL' || log.class === selectedClass);
                 const matchSub = (selectedSub === 'ALL' || log.subject === selectedSub);
-                const isMissingOnly = log.isMissing === true; // 只顯示欠交的學生
+                const isMissingOnly = log.isMissing === true;
                 return matchClass && matchSub && isMissingOnly;
+            }).sort((a, b) => {
+                // 報表紀錄按班別自然順序(1A, 1B..)及日期進行排序
+                if (a.class !== b.class) return compareClasses(a.class, b.class);
+                return b.date.localeCompare(a.date);
             });
         }
 
@@ -1452,7 +1460,7 @@ function doPost(e) {
                 return;
             }
 
-            filtered.slice().reverse().forEach(log => {
+            filtered.forEach(log => {
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-50';
 
@@ -1465,7 +1473,7 @@ function doPost(e) {
 
                 tr.innerHTML = `
                     <td class="p-3 font-mono text-xs text-slate-500">${log.date}</td>
-                    <td class="p-3 font-medium text-slate-800">${log.class} - ${log.studentName}</td>
+                    <td class="p-3 font-medium text-slate-800"><span class="font-bold text-indigo-700 mr-1">${log.class}</span> - ${log.studentName}</td>
                     <td class="p-3 text-slate-600">${log.subject}</td>
                     <td class="p-3 font-medium text-indigo-900">${log.taskName}</td>
                     <td class="p-3">${attBadge}</td>
@@ -1507,16 +1515,18 @@ function doPost(e) {
             const tbody = document.getElementById('adminStudentTableBody');
             tbody.innerHTML = '';
 
+            // 按班別自然順序(1A, 1B, 1C..)與座號排序
             const sorted = studentsDB.slice().sort((a, b) => {
-                if (a.class !== b.class) return a.class.localeCompare(b.class);
+                if (a.class !== b.class) return compareClasses(a.class, b.class);
                 return a.seat - b.seat;
             });
 
-            sorted.forEach((student, index) => {
+            sorted.forEach((student) => {
+                const originalIndex = studentsDB.indexOf(student);
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-50';
                 tr.innerHTML = `
-                    <td class="p-3 font-bold text-slate-700">${student.class}</td>
+                    <td class="p-3 font-bold text-indigo-900">${student.class}</td>
                     <td class="p-3 font-mono text-center">${student.seat}</td>
                     <td class="p-3 font-medium text-slate-800">${student.name}</td>
                     <td class="p-3 text-slate-500 text-xs">${student.nameEn || '-'}</td>
@@ -1526,8 +1536,8 @@ function doPost(e) {
                         </span>
                     </td>
                     <td class="p-3 text-center space-x-1">
-                        <button onclick="openEditStudentModal(${index})" class="admin-only-btn text-indigo-600 hover:text-indigo-800 p-1"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button onclick="deleteStudent(${index})" class="admin-only-btn text-red-600 hover:text-red-800 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        <button onclick="openEditStudentModal(${originalIndex})" class="admin-only-btn text-indigo-600 hover:text-indigo-800 p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteStudent(${originalIndex})" class="admin-only-btn text-red-600 hover:text-red-800 p-1"><i class="fa-solid fa-trash-can"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1535,19 +1545,24 @@ function doPost(e) {
         }
 
         function renderAdminClasses() {
+            sortClassesDB(); // 確保班別列表按自然順序渲染
             const container = document.getElementById('classListContainer');
             container.innerHTML = '';
 
-            classesDB.forEach((c, idx) => {
+            classesDB.forEach((c) => {
+                const originalIdx = classesDB.findIndex(item => item.id === c.id);
                 const count = studentsDB.filter(s => s.class === c.id && s.status === 'Active').length;
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center';
+                card.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center hover:border-indigo-300 transition';
                 card.innerHTML = `
                     <div>
-                        <div class="text-lg font-bold text-indigo-900">${c.name}</div>
-                        <div class="text-xs text-indigo-600 font-semibold mt-2">學生人數: ${count} 人</div>
+                        <div class="text-lg font-bold text-indigo-900 flex items-center space-x-2">
+                            <span>${c.name}</span>
+                            <span class="text-xs font-mono bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded border border-indigo-100">${c.id}</span>
+                        </div>
+                        <div class="text-xs text-slate-500 font-medium mt-1">學生人數: <strong class="text-slate-800 font-bold">${count}</strong> 人</div>
                     </div>
-                    <button onclick="deleteClass(${idx})" class="admin-only-btn text-red-400 hover:text-red-600 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                    <button onclick="deleteClass(${originalIdx})" class="admin-only-btn text-red-400 hover:text-red-600 p-2"><i class="fa-solid fa-trash-can"></i></button>
                 `;
                 container.appendChild(card);
             });
@@ -1623,7 +1638,7 @@ function doPost(e) {
                     }).filter(item => item.name !== '');
 
                     if (importedTempData.length === 0) {
-                        showToast('無法從檔案中讀取資料，請確認標頭欄位為：學號,班別,座號,中文姓名,英文姓名。', 'error');
+                        showToast('無法讀取資料，請確認標頭包含：學號,班別,座號,中文姓名,英文姓名。', 'error');
                         document.getElementById('importPreviewArea').classList.add('hidden');
                         return;
                     }
@@ -1632,7 +1647,7 @@ function doPost(e) {
                     previewTable.innerHTML = '';
                     importedTempData.slice(0, 10).forEach(item => {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = `<td class="p-1">${item.class}</td><td class="p-1">${item.seat}</td><td class="p-1 font-bold">${item.name}</td><td class="p-1 text-slate-500">${item.nameEn || '-'}</td>`;
+                        tr.innerHTML = `<td class="p-1 font-bold text-indigo-700">${item.class}</td><td class="p-1">${item.seat}</td><td class="p-1 font-bold">${item.name}</td><td class="p-1 text-slate-500">${item.nameEn || '-'}</td>`;
                         previewTable.appendChild(tr);
                     });
 
@@ -1682,7 +1697,7 @@ function doPost(e) {
             loadStudentGrid();
             
             closeModal('importModal');
-            showToast(`批量匯入成功！已成功存入各班虛擬獨立儲存空間！`, 'success');
+            showToast(`批量匯入成功！已成功存入各班獨立儲存區！`, 'success');
             
             importedTempData = [];
             document.getElementById('csvFileInput').value = '';
@@ -1690,7 +1705,7 @@ function doPost(e) {
         }
 
         function downloadCSVTemplate() {
-            const template = "\uFEFF學號,班別,座號,中文姓名,英文姓名\n01,1A,01,陳芷晴,CHAN CHI CHENG\n02,1A,02,陳柏杋,CHAN PAK FAN\n03,1A,03,陳琛,CHAN SAM";
+            const template = "\uFEFF學號,班別,座號,中文姓名,英文姓名\n01,1A,01,陳芷晴,CHAN CHI CHENG\n02,1A,02,陳柏杋,CHAN PAK FAN\n03,1B,01,何梓軒,HO TSZ HIN";
             const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
@@ -1701,6 +1716,7 @@ function doPost(e) {
         }
 
         function renderVirtualStorageBuckets() {
+            sortClassesDB(); // 磁區展示也依自然順序排列
             const container = document.getElementById('virtualStorageContainer');
             if (!container) return;
             container.innerHTML = '';
@@ -1841,7 +1857,6 @@ function doPost(e) {
                 return;
             }
 
-            // 若該班別尚不存在於班別清單中，自動新增該班別
             if (!classesDB.some(c => c.id === targetClass)) {
                 classesDB.push({ id: targetClass, name: `${targetClass} 班` });
             }
@@ -1860,10 +1875,8 @@ function doPost(e) {
                 studentsDB[parseInt(idx)] = data;
             }
 
-            // 即時寫入各班 LocalStorage Persistent Buckets
             saveAllToLocalStorage();
 
-            // 重新刷新選單與介面
             populateClassSelects();
             renderAdminStudents();
             renderAdminClasses();
@@ -1877,36 +1890,53 @@ function doPost(e) {
         function deleteStudent(idx) {
             if (currentRole !== 'Admin') return;
             const s = studentsDB[idx];
-            studentsDB.splice(idx, 1);
-            saveAllToLocalStorage();
-            renderAdminStudents();
-            renderVirtualStorageBuckets();
-            loadStudentGrid();
-            showToast(`已自 ${s.class} 班儲存區移除學生 [${s.name}]`, 'success');
+            showConfirm(
+                '刪除學生',
+                `確定要自 ${s.class} 班移除學生 [${s.name}] 嗎？`,
+                () => {
+                    studentsDB.splice(idx, 1);
+                    saveAllToLocalStorage();
+                    renderAdminStudents();
+                    renderVirtualStorageBuckets();
+                    loadStudentGrid();
+                    showToast(`已自 ${s.class} 班儲存區移除學生 [${s.name}]`, 'success');
+                }
+            );
         }
 
         function openAddClassModal() {
             if (currentRole !== 'Admin') return;
-            const cName = prompt('請輸入新班別名稱 (如: 3A):');
-            if (cName) {
-                classesDB.push({ id: cName, name: `${cName} 班` });
-                saveAllToLocalStorage();
-                populateClassSelects();
-                renderAdminClasses();
-                renderVirtualStorageBuckets();
-                showToast(`已新增班別 ${cName} 及其獨立儲存空間！`, 'success');
+            const cName = prompt('請輸入新班別名稱 (例如: 1C, 2A):');
+            if (cName && cName.trim()) {
+                const cleanName = cName.trim().toUpperCase();
+                if (!classesDB.some(c => c.id === cleanName)) {
+                    classesDB.push({ id: cleanName, name: `${cleanName} 班` });
+                    saveAllToLocalStorage();
+                    populateClassSelects();
+                    renderAdminClasses();
+                    renderVirtualStorageBuckets();
+                    showToast(`已新增班別 ${cleanName} 及其獨立儲存空間！`, 'success');
+                } else {
+                    showToast('該班別已存在', 'error');
+                }
             }
         }
 
         function deleteClass(idx) {
             if (currentRole !== 'Admin') return;
             const c = classesDB[idx];
-            classesDB.splice(idx, 1);
-            saveAllToLocalStorage();
-            populateClassSelects();
-            renderAdminClasses();
-            renderVirtualStorageBuckets();
-            showToast(`班別 ${c.id} 及其虛擬儲存空間已成功刪除`, 'success');
+            showConfirm(
+                '刪除班別',
+                `確定要刪除班別 [${c.name}] 嗎？這將一併影響該班別之顯示。`,
+                () => {
+                    classesDB.splice(idx, 1);
+                    saveAllToLocalStorage();
+                    populateClassSelects();
+                    renderAdminClasses();
+                    renderVirtualStorageBuckets();
+                    showToast(`班別 ${c.id} 及其虛擬儲存空間已成功刪除`, 'success');
+                }
+            );
         }
 
         function executePromotion() {
@@ -1915,26 +1945,33 @@ function doPost(e) {
                 return;
             }
 
-            studentsDB.forEach(s => {
-                const gradeNum = parseInt(s.class.charAt(0));
-                const letter = s.class.slice(1);
-                if (!isNaN(gradeNum)) {
-                    if (gradeNum >= 6) {
-                        s.status = 'Graduated';
-                    } else {
-                        s.class = `${gradeNum + 1}${letter}`;
-                    }
-                }
-            });
+            showConfirm(
+                '學年升級作業',
+                '確定要執行全校一鍵升級作業？各班學生將向上升級一級，6年級將畢業。此動作不可逆！',
+                () => {
+                    studentsDB.forEach(s => {
+                        const gradeNum = parseInt(s.class.charAt(0));
+                        const letter = s.class.slice(1);
+                        if (!isNaN(gradeNum)) {
+                            if (gradeNum >= 6) {
+                                s.status = 'Graduated';
+                            } else {
+                                s.class = `${gradeNum + 1}${letter}`;
+                            }
+                        }
+                    });
 
-            homeworkLogsDB = [];
-            saveAllToLocalStorage();
-            populateClassSelects();
-            renderAdminStudents();
-            renderVirtualStorageBuckets();
-            loadStudentGrid();
-            renderReportTable();
-            showToast('全校學年升級作業完成！歷史紀錄已歸檔並更新儲存。', 'success');
+                    homeworkLogsDB = [];
+                    saveAllToLocalStorage();
+                    populateClassSelects();
+                    renderAdminStudents();
+                    renderAdminClasses();
+                    renderVirtualStorageBuckets();
+                    loadStudentGrid();
+                    renderReportTable();
+                    showToast('全校學年升級作業完成！歷史紀錄已歸檔。', 'success');
+                }
+            );
         }
 
         function closeModal(modalId) {
@@ -1944,6 +1981,30 @@ function doPost(e) {
         function openImportModal() {
             if (currentRole !== 'Admin') return;
             document.getElementById('importModal').classList.remove('hidden');
+        }
+
+        function showConfirm(title, message, onConfirm) {
+            document.getElementById('confirmModalTitle').textContent = title;
+            document.getElementById('confirmModalMessage').textContent = message;
+            const okBtn = document.getElementById('confirmModalOkBtn');
+            const cancelBtn = document.getElementById('confirmModalCancelBtn');
+            
+            const cleanUp = () => {
+                closeModal('confirmModal');
+                okBtn.onclick = null;
+                cancelBtn.onclick = null;
+            };
+
+            okBtn.onclick = () => {
+                cleanUp();
+                if (onConfirm) onConfirm();
+            };
+
+            cancelBtn.onclick = () => {
+                cleanUp();
+            };
+
+            document.getElementById('confirmModal').classList.remove('hidden');
         }
 
         function showToast(msg, type = 'success') {
