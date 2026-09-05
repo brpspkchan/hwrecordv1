@@ -208,11 +208,11 @@
                 </div>
                 <button onclick="exportReportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 shadow-sm">
                     <i class="fa-solid fa-file-excel"></i>
-                    <span>匯出 Excel 報表</span>
+                    <span>匯出 Excel 欠交報表</span>
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
                     <div class="p-3 bg-red-100 text-red-600 rounded-lg"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
                     <div>
@@ -221,31 +221,25 @@
                     </div>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
-                    <div class="p-3 bg-amber-100 text-amber-600 rounded-lg"><i class="fa-solid fa-user-slash text-2xl"></i></div>
-                    <div>
-                        <div class="text-xs text-slate-500 font-bold uppercase">缺席不計算欠交次數</div>
-                        <div id="totalExcusedCount" class="text-2xl font-black text-slate-800">0</div>
-                    </div>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
                     <div class="p-3 bg-indigo-100 text-indigo-600 rounded-lg"><i class="fa-solid fa-book-bookmark text-2xl"></i></div>
                     <div>
-                        <div class="text-xs text-slate-500 font-bold uppercase">已登記作業總數</div>
+                        <div class="text-xs text-slate-500 font-bold uppercase">涉及作業項次</div>
                         <div id="totalTaskCount" class="text-2xl font-black text-slate-800">0</div>
                     </div>
                 </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm">
-                    欠交與缺席明細紀錄
+                <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm flex justify-between items-center">
+                    <span>欠交學生明細紀錄 (僅顯示有欠交之學生)</span>
+                    <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded font-normal"><i class="fa-solid fa-filter mr-1"></i>已自動過濾「已繳交」紀錄</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse text-sm">
                         <thead class="bg-slate-100 text-slate-600 text-xs font-semibold uppercase">
                             <tr>
                                 <th class="p-3">日期</th>
-                                <th class="p-3">班別 / 座號 / 姓名</th>
+                                <th class="p-3">班別 / 姓名</th>
                                 <th class="p-3">科目</th>
                                 <th class="p-3">作業名稱</th>
                                 <th class="p-3">出席狀態</th>
@@ -679,8 +673,7 @@ function doPost(e) {
         ];
 
         const SEED_HOMEWORK_LOGS_DB = [
-            { date: '2026-09-01', class: '1A', subject: '中文', taskName: '單元一工作紙', studentName: '陳芷晴', attendance: 'Present', isMissing: true, remark: '未帶作業' },
-            { date: '2026-09-01', class: '1A', subject: '中文', taskName: '單元一工作紙', studentName: '陳柏杋', attendance: 'Sick_Leave', isMissing: false, remark: '病假 (不計欠交)' }
+            { date: '2026-09-01', class: '1A', subject: '中文', taskName: '單元一工作紙', studentName: '陳芷晴', attendance: 'Present', isMissing: true, remark: '未帶作業' }
         ];
 
         // 運行中資料庫 (由 LocalStorage 載入或使用種子資料)
@@ -947,17 +940,17 @@ function doPost(e) {
             ));
 
             if (savedTasks.length === 0) {
-                container.innerHTML = `<span class="text-slate-400 italic">尚無登記紀錄</span>`;
+                container.innerHTML = `<span class="text-slate-400 italic">尚無欠交登記紀錄</span>`;
                 return;
             }
 
             savedTasks.forEach(task => {
                 const missingCount = homeworkLogsDB.filter(l => l.date === regDate && l.class === regClass && l.subject === regSubject && l.taskName === task && l.isMissing).length;
                 const badge = document.createElement('span');
-                badge.className = 'inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-medium';
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-xs font-medium';
                 badge.innerHTML = `
                     <span>${task} (欠交: ${missingCount}人)</span>
-                    <button onclick="deleteRegisteredTaskLog('${regDate}', '${regClass}', '${regSubject}', '${task}')" title="刪除此項紀錄" class="ml-1.5 text-emerald-600 hover:text-red-600"><i class="fa-solid fa-trash-can"></i></button>
+                    <button onclick="deleteRegisteredTaskLog('${regDate}', '${regClass}', '${regSubject}', '${task}')" title="刪除此項紀錄" class="ml-1.5 text-amber-600 hover:text-red-600"><i class="fa-solid fa-trash-can"></i></button>
                 `;
                 container.appendChild(badge);
             });
@@ -1174,8 +1167,13 @@ function doPost(e) {
             }
 
             const currentStudents = studentsDB.filter(s => s.class === regClass && s.status === 'Active').sort((a,b)=>a.seat-b.seat);
-            let addedCount = 0;
+            let missingCountTotal = 0;
             let missingToSync = [];
+
+            // 先移除當日當班同科同項目的舊紀錄以利覆蓋更新
+            currentTaskList.forEach(taskName => {
+                homeworkLogsDB = homeworkLogsDB.filter(l => !(l.date === regDate && l.class === regClass && l.subject === regSubject && l.taskName === taskName));
+            });
 
             currentStudents.forEach((student, idx) => {
                 const attSelect = document.querySelectorAll('.attendance-select')[idx];
@@ -1188,19 +1186,20 @@ function doPost(e) {
                         const chk = document.getElementById(`chk_${idx}_${tIdx}`);
                         const isMissing = chk ? chk.checked : false;
 
-                        homeworkLogsDB.push({
-                            date: regDate,
-                            class: regClass,
-                            subject: regSubject,
-                            taskName: taskName,
-                            studentName: student.name,
-                            attendance: attendance,
-                            isMissing: isMissing,
-                            remark: remark ? remark.value : ''
-                        });
-                        addedCount++;
-
+                        // 只紀錄並儲存有欠交的學生資料
                         if (attendance === 'Present' && isMissing) {
+                            homeworkLogsDB.push({
+                                date: regDate,
+                                class: regClass,
+                                subject: regSubject,
+                                taskName: taskName,
+                                studentName: student.name,
+                                attendance: attendance,
+                                isMissing: true,
+                                remark: remark ? remark.value : ''
+                            });
+                            missingCountTotal++;
+
                             missingToSync.push({
                                 className: regClass,
                                 studentName: student.name,
@@ -1214,7 +1213,11 @@ function doPost(e) {
             });
 
             saveAllToLocalStorage();
-            showToast(`已成功儲存 ${currentTaskList.length} 項作業 (共 ${addedCount} 筆學生紀錄)！`, 'success');
+            if (missingCountTotal > 0) {
+                showToast(`已成功儲存登記！本次共紀錄 ${missingCountTotal} 人次欠交。`, 'success');
+            } else {
+                showToast(`全班皆已繳交，無新增欠交紀錄！`, 'success');
+            }
 
             const gasUrl = localStorage.getItem('gas_webhook_url') || DEFAULT_GAS_URL;
             if (gasUrl && missingToSync.length > 0) {
@@ -1420,28 +1423,32 @@ function doPost(e) {
         // ==========================================
         // 5. 統計報表
         // ==========================================
-        function renderReportTable() {
+        function getFilteredMissingLogs() {
             const selectedClass = document.getElementById('reportClass').value;
             const selectedSub = document.getElementById('reportSubject').value;
+
+            return homeworkLogsDB.filter(log => {
+                const matchClass = (selectedClass === 'ALL' || log.class === selectedClass);
+                const matchSub = (selectedSub === 'ALL' || log.subject === selectedSub);
+                const isMissingOnly = log.isMissing === true; // 只顯示欠交的學生
+                return matchClass && matchSub && isMissingOnly;
+            });
+        }
+
+        function renderReportTable() {
             const tbody = document.getElementById('reportTableBody');
             tbody.innerHTML = '';
 
-            let filtered = homeworkLogsDB.filter(log => {
-                const matchClass = (selectedClass === 'ALL' || log.class === selectedClass);
-                const matchSub = (selectedSub === 'ALL' || log.subject === selectedSub);
-                return matchClass && matchSub;
-            });
+            const filtered = getFilteredMissingLogs();
 
-            let missingCount = filtered.filter(l => l.isMissing).length;
-            let excusedCount = filtered.filter(l => l.attendance !== 'Present').length;
+            let missingCount = filtered.length;
             let taskSet = new Set(filtered.map(l => `${l.date}_${l.class}_${l.subject}_${l.taskName}`));
 
             document.getElementById('totalMissingCount').textContent = missingCount;
-            document.getElementById('totalExcusedCount').textContent = excusedCount;
             document.getElementById('totalTaskCount').textContent = taskSet.size;
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">尚無相關登記紀錄</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">尚無任何欠交紀錄</td></tr>`;
                 return;
             }
 
@@ -1454,12 +1461,7 @@ function doPost(e) {
                     attBadge = `<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium">${getAttendanceText(log.attendance)}</span>`;
                 }
 
-                let statusBadge = '<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">已繳交</span>';
-                if (log.attendance !== 'Present') {
-                    statusBadge = '<span class="text-xs bg-slate-100 text-slate-400 px-2 py-0.5 rounded">不計算欠交</span>';
-                } else if (log.isMissing) {
-                    statusBadge = '<span class="text-xs bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded">欠交</span>';
-                }
+                let statusBadge = '<span class="text-xs bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded">欠交</span>';
 
                 tr.innerHTML = `
                     <td class="p-3 font-mono text-xs text-slate-500">${log.date}</td>
@@ -1475,21 +1477,27 @@ function doPost(e) {
         }
 
         function exportReportToExcel() {
-            const worksheet = XLSX.utils.json_to_sheet(homeworkLogsDB.map(l => ({
+            const missingLogs = getFilteredMissingLogs();
+            if (missingLogs.length === 0) {
+                showToast('目前無任何欠交紀錄可供匯出！', 'error');
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(missingLogs.map(l => ({
                 日期: l.date,
                 班別: l.class,
                 學生姓名: l.studentName,
                 科目: l.subject,
                 作業名稱: l.taskName,
-                出席狀態: l.attendance,
-                是否欠交: l.isMissing ? '是' : '否',
+                出席狀態: l.attendance === 'Present' ? '出席' : getAttendanceText(l.attendance),
+                欠交狀態: '欠交',
                 備註: l.remark
             })));
 
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "欠交統計報表");
-            XLSX.writeFile(workbook, `功課欠交與出席紀錄報表_${new Date().toISOString().split('T')[0]}.xlsx`);
-            showToast('Excel 報表匯出成功！', 'success');
+            XLSX.utils.book_append_sheet(workbook, worksheet, "學生欠交明細報表");
+            XLSX.writeFile(workbook, `功課欠交明細報表_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showToast('Excel 欠交報表匯出成功！', 'success');
         }
 
         // ==========================================
