@@ -311,9 +311,9 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <button onclick="openImportModal()" class="admin-only-btn bg-slate-800 hover:bg-slate-900 text-white px-3.5 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 shadow-sm">
-                            <i class="fa-solid fa-file-csv"></i>
-                            <span>批量匯入 CSV/Excel</span>
+                        <button onclick="openImportModal()" class="admin-only-btn bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 shadow-sm">
+                            <i class="fa-solid fa-paste"></i>
+                            <span>批量匯入 / 剪貼貼上學生</span>
                         </button>
                         <button onclick="openAddStudentModal()" class="admin-only-btn bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 shadow-sm">
                             <i class="fa-solid fa-user-plus"></i>
@@ -421,43 +421,80 @@
 
     </main>
 
-    <!-- Modal 1: 批量匯入 Modal -->
+    <!-- Modal 1: 批量匯入 Modal (雙模式: 檔案上傳 + 文字複製貼上) -->
     <div id="importModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-xl w-full p-6 space-y-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="font-bold text-lg text-slate-800">批量匯入學生名單 (CSV / Excel)</h3>
+                <h3 class="font-bold text-lg text-slate-800">批量新增學生名單</h3>
                 <button onclick="closeModal('importModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div class="space-y-3">
-                <p class="text-xs text-slate-600">請上傳包含以下欄位的 CSV 或 Excel 檔案（匯入成功後將自動長期儲存於本機資料庫）：<br><code class="bg-slate-100 px-1 rounded text-indigo-600">學號, 班別, 座號, 中文姓名, 英文姓名</code></p>
-                <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-indigo-500 transition cursor-pointer" onclick="document.getElementById('csvFileInput').click()">
-                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
+
+            <!-- 切換頁籤 (檔案上傳 vs 直接貼上) -->
+            <div class="flex border-b border-slate-200 text-sm font-semibold">
+                <button id="importTabBtnPaste" onclick="switchImportMethod('paste')" class="px-4 py-2 text-indigo-600 border-b-2 border-indigo-600 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-paste"></i>
+                    <span>直接從 Excel 貼上 (推薦：GitHub 最佳)</span>
+                </button>
+                <button id="importTabBtnFile" onclick="switchImportMethod('file')" class="px-4 py-2 text-slate-500 border-b-2 border-transparent hover:text-indigo-600 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-file-arrow-up"></i>
+                    <span>上傳 CSV / Excel 檔案</span>
+                </button>
+            </div>
+
+            <!-- 模式 A: 複製貼上文字區 -->
+            <div id="importMethodPaste" class="space-y-3">
+                <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-900 space-y-1">
+                    <p class="font-bold"><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>操作極簡步驟 (相容 GitHub Pages 及任何瀏覽器)：</p>
+                    <p>1. 在 Excel / Google 試算表中選取表格（含表頭標籤如：<code>班別</code>、<code>座號</code>、<code>中文姓名</code>、<code>英文姓名</code>）。</p>
+                    <p>2. 按 <kbd class="bg-white border px-1 rounded font-mono">Ctrl+C</kbd> 複製，貼在下方方框內，點擊「解析貼上內容」即可！</p>
+                </div>
+                <textarea id="pasteInputText" rows="6" placeholder="請直接在此貼上 Excel 表格內容...&#10;範例：&#10;班別&#9;座號&#9;中文姓名&#9;英文姓名&#10;1A&#9;1&#9;陳芷晴&#9;CHAN CHI CHENG&#10;1A&#9;2&#9;陳柏杋&#9;CHAN PAK FAN" class="w-full border border-slate-300 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50"></textarea>
+                <button onclick="parsePastedText()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs shadow transition">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>解析貼上內容
+                </button>
+            </div>
+
+            <!-- 模式 B: 檔案上傳區 -->
+            <div id="importMethodFile" class="space-y-3 hidden">
+                <p class="text-xs text-slate-600">請上傳 CSV 或 Excel (.xlsx) 檔案，系統自動辨識欄位標頭：<br><code class="bg-slate-100 px-1 rounded text-indigo-600">班別, 座號, 中文姓名, 英文姓名</code></p>
+                <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-indigo-500 transition cursor-pointer bg-slate-50" onclick="document.getElementById('csvFileInput').click()">
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-indigo-400 mb-2"></i>
                     <p class="text-sm font-medium text-slate-700">點擊選擇檔案 或 將檔案拖曳至此</p>
                     <input type="file" id="csvFileInput" accept=".csv, .xlsx, .xls" onchange="handleFileUpload(event)" onclick="this.value=null" class="hidden">
                 </div>
-                
-                <div id="importPreviewArea" class="hidden border rounded-lg p-3 bg-slate-50 text-xs space-y-2">
-                    <div class="flex justify-between font-bold text-slate-700">
-                        <span>預覽讀取資料 (<span id="importCount">0</span> 筆)</span>
-                        <span id="importFileName" class="text-indigo-600 font-mono"></span>
-                    </div>
-                    <div class="max-h-36 overflow-y-auto font-mono text-[11px] bg-white p-2 border rounded">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="border-b"><th>班別</th><th>座號</th><th>中文姓名</th><th>英文姓名</th></tr>
-                            </thead>
-                            <tbody id="importPreviewTable"></tbody>
-                        </table>
-                    </div>
-                </div>
+            </div>
 
-                <div class="flex justify-between items-center text-xs">
-                    <a href="#" onclick="downloadCSVTemplate()" class="text-indigo-600 hover:underline"><i class="fa-solid fa-download mr-1"></i>下載標準範本 CSV</a>
+            <!-- 預覽區塊 -->
+            <div id="importPreviewArea" class="hidden border rounded-lg p-3 bg-slate-50 text-xs space-y-2">
+                <div class="flex justify-between items-center font-bold text-slate-700 border-b pb-1">
+                    <span><i class="fa-solid fa-table-list text-emerald-600 mr-1"></i>預覽讀取資料 (<span id="importCount" class="text-indigo-600 font-mono text-sm">0</span> 筆)</span>
+                    <span id="importFileName" class="text-slate-500 font-mono text-[11px]"></span>
+                </div>
+                <div class="max-h-40 overflow-y-auto font-mono text-[11px] bg-white p-2 border rounded">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b bg-slate-50 text-slate-600">
+                                <th class="p-1">班別</th>
+                                <th class="p-1">座號</th>
+                                <th class="p-1">中文姓名</th>
+                                <th class="p-1">英文姓名</th>
+                            </tr>
+                        </thead>
+                        <tbody id="importPreviewTable"></tbody>
+                    </table>
                 </div>
             </div>
+
+            <div class="flex justify-between items-center text-xs pt-1">
+                <a href="#" onclick="downloadCSVTemplate()" class="text-indigo-600 hover:underline"><i class="fa-solid fa-download mr-1"></i>下載標準 CSV 範本</a>
+                <span class="text-slate-400">支援繁繁中文、英文字元及自動自動去除 BOM</span>
+            </div>
+
             <div class="flex justify-end space-x-2 pt-3 border-t">
-                <button onclick="closeModal('importModal')" class="px-4 py-2 border rounded-lg text-sm font-medium text-slate-600">取消</button>
-                <button onclick="processImport()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">確認匯入並保存</button>
+                <button onclick="closeModal('importModal')" class="px-4 py-2 border rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">取消</button>
+                <button onclick="processImport()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold shadow-sm">
+                    <i class="fa-solid fa-circle-check mr-1"></i>確認匯入並保存
+                </button>
             </div>
         </div>
     </div>
@@ -738,6 +775,43 @@ function doPost(e) {
             updateStorageMetrics();
         }
 
+        function populateClassSelects() {
+            const regSelect = document.getElementById('regClass');
+            const reportSelect = document.getElementById('reportClass');
+            const studentModalClassSelect = document.getElementById('mStudentClass');
+
+            const currentRegVal = regSelect.value;
+            const currentReportVal = reportSelect.value;
+
+            regSelect.innerHTML = '';
+            reportSelect.innerHTML = '<option value="ALL">全部班別</option>';
+            studentModalClassSelect.innerHTML = '';
+
+            classesDB.forEach(c => {
+                const opt1 = document.createElement('option');
+                opt1.value = c.id;
+                opt1.textContent = `${c.name} (${c.teacher})`;
+                regSelect.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = c.id;
+                opt2.textContent = c.name;
+                reportSelect.appendChild(opt2);
+
+                const opt3 = document.createElement('option');
+                opt3.value = c.id;
+                opt3.textContent = c.name;
+                studentModalClassSelect.appendChild(opt3);
+            });
+
+            if (currentRegVal && classesDB.some(c => c.id === currentRegVal)) {
+                regSelect.value = currentRegVal;
+            }
+            if (currentReportVal && (currentReportVal === 'ALL' || classesDB.some(c => c.id === currentReportVal))) {
+                reportSelect.value = currentReportVal;
+            }
+        }
+
         function updateStorageMetrics() {
             const strClasses = localStorage.getItem(STORAGE_KEY_CLASSES) || '';
             const strStudents = localStorage.getItem(STORAGE_KEY_STUDENTS) || '';
@@ -954,7 +1028,7 @@ function doPost(e) {
             document.getElementById('gridStudentCount').textContent = filteredStudents.length;
 
             if (filteredStudents.length === 0) {
-                gridBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400">此班別目前尚無學生資料</td></tr>`;
+                gridBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400">此班別目前尚無學生資料，請至 Admin 後台匯入學生名單。</td></tr>`;
                 updateGridStats();
                 return;
             }
@@ -1189,7 +1263,7 @@ function doPost(e) {
             renderReportTable();
         }
 
-        // 核心同步至 Google 試算表邏輯 (修復網址驗證與 CORS 預檢限制)
+        // 核心同步至 Google 試算表邏輯
         function syncToGoogleSheets(url, dataPayload) {
             if (!url || !url.trim()) {
                 showToast('尚未設定同步網址，跳過試算表同步。', 'error');
@@ -1216,7 +1290,6 @@ function doPost(e) {
 
             showToast('正同步寫入至 Google 試算表...', 'success');
             
-            // 使用 text/plain 避免觸發跨域預檢 (CORS Preflight Options Request)
             fetch(trimmedUrl, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -1308,8 +1381,44 @@ function doPost(e) {
         }
 
         // ==========================================
-        // 4. 原生萬能 CSV 解析邏輯
+        // 4. 超強彈性欄位提取與解析邏輯 (支援 GitHub 多語言欄位自動比對)
         // ==========================================
+        function mapRawObjectsToStudents(rawObjects) {
+            if (!Array.isArray(rawObjects) || rawObjects.length === 0) return [];
+
+            return rawObjects.map(row => {
+                const keys = Object.keys(row);
+                
+                const getVal = (possibleNames) => {
+                    for (const name of possibleNames) {
+                        const matchedKey = keys.find(k => {
+                            const cleanKey = k.replace(/^\uFEFF/, '').trim().toLowerCase();
+                            const cleanTarget = name.toLowerCase();
+                            return cleanKey === cleanTarget || cleanKey.includes(cleanTarget);
+                        });
+                        if (matchedKey && row[matchedKey] !== undefined && row[matchedKey] !== null) {
+                            return String(row[matchedKey]).trim();
+                        }
+                    }
+                    return '';
+                };
+
+                const cls = getVal(['班別', '班級', 'Class', 'class', 'GRADE']) || '1A';
+                const seatVal = getVal(['座號', '學號', 'Seat', 'seat', 'No', 'No.', '號碼']);
+                const seat = parseInt(seatVal.replace(/\D/g, '')) || 1;
+                const name = getVal(['中文姓名', '姓名', '中文名', 'Name', 'name', '學生姓名', 'Student Name']);
+                const nameEn = getVal(['英文姓名', '英文名', 'English Name', 'nameEn', 'NameEn', 'EN Name']);
+
+                return {
+                    class: cls,
+                    seat: seat,
+                    name: name,
+                    nameEn: nameEn,
+                    status: 'Active'
+                };
+            }).filter(item => item.name !== '');
+        }
+
         function parseCSVText(csvText) {
             if (!csvText) return [];
             if (csvText.charCodeAt(0) === 0xFEFF) {
@@ -1318,7 +1427,7 @@ function doPost(e) {
 
             let delimiter = ',';
             const firstLine = csvText.split(/\r\n|\n|\r/)[0] || '';
-            if (firstLine.includes('\t') && !firstLine.includes(',')) delimiter = '\t';
+            if (firstLine.includes('\t')) delimiter = '\t';
             else if (firstLine.includes(';') && !firstLine.includes(',')) delimiter = ';';
 
             const lines = [];
@@ -1381,6 +1490,62 @@ function doPost(e) {
                 result.push(rowObj);
             }
             return result;
+        }
+
+        // 切換匯入模式 (貼上 vs 檔案)
+        function switchImportMethod(method) {
+            const btnPaste = document.getElementById('importTabBtnPaste');
+            const btnFile = document.getElementById('importTabBtnFile');
+            const divPaste = document.getElementById('importMethodPaste');
+            const divFile = document.getElementById('importMethodFile');
+
+            if (method === 'paste') {
+                btnPaste.className = 'px-4 py-2 text-indigo-600 border-b-2 border-indigo-600 flex items-center space-x-1.5';
+                btnFile.className = 'px-4 py-2 text-slate-500 border-b-2 border-transparent hover:text-indigo-600 flex items-center space-x-1.5';
+                divPaste.classList.remove('hidden');
+                divFile.classList.add('hidden');
+            } else {
+                btnFile.className = 'px-4 py-2 text-indigo-600 border-b-2 border-indigo-600 flex items-center space-x-1.5';
+                btnPaste.className = 'px-4 py-2 text-slate-500 border-b-2 border-transparent hover:text-indigo-600 flex items-center space-x-1.5';
+                divFile.classList.remove('hidden');
+                divPaste.classList.add('hidden');
+            }
+        }
+
+        // 解析直接貼上的文字內容 (Excel / Google Sheets / TSV / CSV)
+        function parsePastedText() {
+            const text = document.getElementById('pasteInputText').value;
+            if (!text || !text.trim()) {
+                showToast('請先貼上內容！', 'error');
+                return;
+            }
+
+            const rawJson = parseCSVText(text.trim());
+            importedTempData = mapRawObjectsToStudents(rawJson);
+
+            if (importedTempData.length === 0) {
+                showToast('無法識別姓名欄位，請確定包含表頭（如：班別, 座號, 中文姓名, 英文姓名）。', 'error');
+                document.getElementById('importPreviewArea').classList.add('hidden');
+                return;
+            }
+
+            displayImportPreview('Excel 剪貼簿貼上內容');
+            showToast(`成功解析 ${importedTempData.length} 筆學生資料！`, 'success');
+        }
+
+        function displayImportPreview(fileNameStr) {
+            const previewTable = document.getElementById('importPreviewTable');
+            previewTable.innerHTML = '';
+
+            importedTempData.slice(0, 15).forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="p-1">${item.class}</td><td class="p-1">${item.seat}</td><td class="p-1 font-bold">${item.name}</td><td class="p-1 text-slate-500">${item.nameEn || '-'}</td>`;
+                previewTable.appendChild(tr);
+            });
+
+            document.getElementById('importCount').textContent = importedTempData.length;
+            document.getElementById('importFileName').textContent = fileNameStr;
+            document.getElementById('importPreviewArea').classList.remove('hidden');
         }
 
         // ==========================================
@@ -1526,7 +1691,6 @@ function doPost(e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            document.getElementById('importFileName').textContent = file.name;
             const reader = new FileReader();
 
             reader.onload = function(evt) {
@@ -1551,7 +1715,7 @@ function doPost(e) {
                         rawJson = parseCSVText(text);
                     } else {
                         if (typeof XLSX === 'undefined') {
-                            showToast('SheetJS 函式庫讀取中，請稍後重試。', 'error');
+                            showToast('SheetJS 函式庫未成功載入，請改用「直接貼上」模式！', 'error');
                             return;
                         }
                         const workbook = XLSX.read(data, { type: 'array' });
@@ -1560,47 +1724,20 @@ function doPost(e) {
                         rawJson = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
                     }
 
-                    importedTempData = rawJson.map(row => {
-                        const keys = Object.keys(row);
-                        const getVal = (possibleNames) => {
-                            for (const name of possibleNames) {
-                                const matchedKey = keys.find(k => k.replace(/^\uFEFF/, '').trim() === name);
-                                if (matchedKey && row[matchedKey] !== undefined && row[matchedKey] !== null) {
-                                    return String(row[matchedKey]).trim();
-                                }
-                            }
-                            return '';
-                        };
-
-                        const cls = getVal(['班別', 'Class', 'class']) || '1A';
-                        const seatVal = getVal(['座號', 'Seat', 'seat', '號碼', '學號']);
-                        const seat = parseInt(seatVal) || 1;
-                        const name = getVal(['中文姓名', '姓名', 'Name', 'name', '學生姓名']);
-                        const nameEn = getVal(['英文姓名', 'English Name', 'nameEn', 'NameEn', '英文名']);
-
-                        return { class: cls, seat: seat, name: name, nameEn: nameEn, status: 'Active' };
-                    }).filter(item => item.name !== '');
+                    importedTempData = mapRawObjectsToStudents(rawJson);
 
                     if (importedTempData.length === 0) {
-                        showToast('無法從檔案中讀取資料，請確認標頭欄位為：學號,班別,座號,中文姓名,英文姓名。', 'error');
+                        showToast('無法從檔案中識別姓名，請檢查 CSV 表頭欄位（如：班別, 座號, 中文姓名, 英文姓名）。', 'error');
                         document.getElementById('importPreviewArea').classList.add('hidden');
                         return;
                     }
 
-                    const previewTable = document.getElementById('importPreviewTable');
-                    previewTable.innerHTML = '';
-                    importedTempData.slice(0, 10).forEach(item => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `<td class="p-1">${item.class}</td><td class="p-1">${item.seat}</td><td class="p-1 font-bold">${item.name}</td><td class="p-1 text-slate-500">${item.nameEn || '-'}</td>`;
-                        previewTable.appendChild(tr);
-                    });
-
-                    document.getElementById('importCount').textContent = importedTempData.length;
-                    document.getElementById('importPreviewArea').classList.remove('hidden');
+                    displayImportPreview(file.name);
+                    showToast(`成功讀取 ${importedTempData.length} 筆學生資料！`, 'success');
 
                 } catch (err) {
                     console.error('File parse error:', err);
-                    showToast('檔案解析失敗，請確保上傳標準 CSV 或 Excel 檔案！', 'error');
+                    showToast('檔案解析失敗，推薦使用「直接貼上」模式進行匯入！', 'error');
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -1613,7 +1750,7 @@ function doPost(e) {
             }
 
             if (!importedTempData || importedTempData.length === 0) {
-                showToast('請先上傳包含有效資料的檔案！', 'error');
+                showToast('請先解析貼上內容或上傳檔案！', 'error');
                 return;
             }
 
@@ -1641,10 +1778,11 @@ function doPost(e) {
             loadStudentGrid();
             
             closeModal('importModal');
-            showToast(`批量匯入成功！已成功長期儲存 ${addedCount} 筆學生資料！`, 'success');
+            showToast(`批量匯入成功！已將 ${addedCount} 筆學生寫入記憶庫！`, 'success');
             
             importedTempData = [];
             document.getElementById('csvFileInput').value = '';
+            document.getElementById('pasteInputText').value = '';
             document.getElementById('importPreviewArea').classList.add('hidden');
         }
 
