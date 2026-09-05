@@ -294,6 +294,9 @@
                         <button onclick="saveGasUrl()" class="admin-only-btn bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shadow-sm">
                             儲存網址
                         </button>
+                        <button onclick="testGasConnection()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shadow-sm">
+                            <i class="fa-solid fa-vial mr-1"></i>測試連線
+                        </button>
                         <button onclick="openGasScriptModal()" class="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap">
                             <i class="fa-solid fa-code mr-1"></i>查看完整部署教學
                         </button>
@@ -527,7 +530,7 @@
                 <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
                     <p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>排查關鍵清單：</p>
                     <ul class="list-disc pl-5 space-y-0.5">
-                        <li>網址必須以 <strong><code class="bg-white px-1 font-mono rounded">/exec</code></strong> 結尾，不能包含 <code class="bg-white px-1 font-mono rounded">/edit</code> 或 <code class="bg-white px-1 font-mono rounded">/library</code>。</li>
+                        <li>網址必須以 <strong><code class="bg-white px-1 font-mono rounded">/exec</code></strong> 結尾，不能包含 <code class="bg-white px-1 font-mono rounded">/edit</code>、<code class="bg-white px-1 font-mono rounded">/dev</code> 或 <code class="bg-white px-1 font-mono rounded">docs.google.com/spreadsheets</code>。</li>
                         <li>部署權限「誰可以存取」必須設定為 <strong>「所有人 (Anyone)」</strong>。</li>
                         <li>每次修改 GAS 腳本後，必須點擊 <strong>「部署」$\rightarrow$「新建部署」</strong> 發布新版本。</li>
                     </ul>
@@ -541,43 +544,65 @@
                     <li>種類選擇 <strong>「網頁應用程式 (Web App)」</strong>。</li>
                     <li>誰可以存取 (Who has access) 必須選擇：<strong>「所有人 (Anyone)」</strong>。</li>
                     <li>點擊「部署」並授權存取後，複製產生的「網頁應用程式 URL」（需以 <code class="font-mono bg-slate-100 px-1">/exec</code> 結尾）。</li>
-                    <li>將複製的網址貼至 Admin 後台的輸入框中並點擊「儲存網址」。</li>
+                    <li>將複製的網址貼至 Admin 後台的輸入框中，點擊「儲存網址」並按「測試連線」。</li>
                 </ol>
 
-                <p class="font-bold text-sm text-slate-800 pt-2">Google Apps Script 原始碼：</p>
+                <p class="font-bold text-sm text-slate-800 pt-2">Google Apps Script 最新完整原始碼：</p>
                 <div class="relative">
                     <pre id="gasCodeSnippet" class="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto select-all">
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({ 
+    status: "online", 
+    message: "校園功課管理系統 GAS API 正常服務中！" 
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000); // 避免多人同時寫入衝突
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     
     // 若工作表為空，自動建置表頭
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow(["班別", "姓名", "欠交日期", "科目", "作業名稱"]);
-      sheet.getRange(1, 1, 1, 5).setFontWeight("bold").setBackground("#f3f4f6");
+      sheet.appendRow(["班別", "姓名", "欠交日期", "科目", "作業名稱", "登記時間"]);
+      sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#e0e7ff");
     }
     
+    if (!e || !e.postData || !e.postData.contents) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "無效的 POST 數據" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     var data = JSON.parse(e.postData.contents);
+    var nowStr = Utilities.formatDate(new Date(), "GMT+8", "yyyy-MM-dd HH:mm:ss");
     
-    // 批次寫入所有欠交學生紀錄
-    if (Array.isArray(data) && data.length > 0) {
-      data.forEach(function(row) {
-        sheet.appendRow([
-          row.className || "-", 
-          row.studentName || "-", 
-          row.date || "-", 
-          row.subject || "-", 
-          row.taskName || "-"
-        ]);
-      });
+    var rowsToAppend = [];
+    var list = Array.isArray(data) ? data : [data];
+    
+    list.forEach(function(row) {
+      rowsToAppend.push([
+        row.className || row.class || "-", 
+        row.studentName || row.name || "-", 
+        row.date || "-", 
+        row.subject || "-", 
+        row.taskName || row.task || "-",
+        nowStr
+      ]);
+    });
+
+    if (rowsToAppend.length > 0) {
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 6).setValues(rowsToAppend);
     }
     
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: data.length }))
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: rowsToAppend.length }))
       .setMimeType(ContentService.MimeType.JSON);
       
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
   }
 }</pre>
                 </div>
@@ -1171,7 +1196,18 @@ function doPost(e) {
                 return;
             }
 
-            const trimmedUrl = url.trim();
+            let trimmedUrl = url.trim();
+
+            if (trimmedUrl.includes('docs.google.com/spreadsheets')) {
+                showToast('錯誤：您貼入的是 Google 試算表網址，請更換為 Apps Script Web App (/exec) 網址！', 'error');
+                return;
+            }
+
+            if (trimmedUrl.includes('/edit') || trimmedUrl.includes('/dev')) {
+                trimmedUrl = trimmedUrl.replace(/\/edit.*$/, '/exec').replace(/\/dev.*$/, '/exec');
+                document.getElementById('gasWebhookUrl').value = trimmedUrl;
+                localStorage.setItem('gas_webhook_url', trimmedUrl);
+            }
 
             if (!trimmedUrl.includes('/exec')) {
                 showToast('同步失敗：Web App 網址必須以 /exec 結尾！', 'error');
@@ -1196,21 +1232,48 @@ function doPost(e) {
             });
         }
 
-        function populateClassSelects() {
-            const regClass = document.getElementById('regClass');
-            const reportClass = document.getElementById('reportClass');
-            const mStudentClass = document.getElementById('mStudentClass');
+        function testGasConnection() {
+            const urlInput = document.getElementById('gasWebhookUrl');
+            let url = urlInput.value.trim();
 
-            regClass.innerHTML = '';
-            reportClass.innerHTML = '<option value="ALL">全校班別</option>';
-            mStudentClass.innerHTML = '';
+            if (!url) {
+                showToast('請先輸入 Google Apps Script Web App 網址', 'error');
+                return;
+            }
 
-            classesDB.forEach(c => {
-                if (currentRole === 'FormTeacher' && c.id !== '1A') return;
+            if (url.includes('docs.google.com/spreadsheets')) {
+                showToast('請勿填寫 Google 試算表網址，請貼上 Apps Script 部署後的 Web App URL！', 'error');
+                return;
+            }
 
-                regClass.add(new Option(`${c.id} (${c.teacher})`, c.id));
-                reportClass.add(new Option(c.id, c.id));
-                mStudentClass.add(new Option(c.id, c.id));
+            if (url.includes('/edit') || url.includes('/dev')) {
+                url = url.replace(/\/edit.*$/, '/exec').replace(/\/dev.*$/, '/exec');
+                urlInput.value = url;
+                localStorage.setItem('gas_webhook_url', url);
+            }
+
+            const testData = [{
+                className: '測試班別',
+                studentName: '連線測試員',
+                date: new Date().toISOString().split('T')[0],
+                subject: '系統測試',
+                taskName: 'API 連線測試'
+            }];
+
+            showToast('正在發送測試連線至 Google 試算表...', 'success');
+
+            fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(testData)
+            })
+            .then(() => {
+                showToast('連線測試成功！請至 Google 試算表查看是否新增了一筆測試紀錄。', 'success');
+            })
+            .catch(err => {
+                console.error('Test connection error:', err);
+                showToast('測試連線失敗，請檢查網路或部署權限是否設為「所有人」！', 'error');
             });
         }
 
@@ -1219,11 +1282,23 @@ function doPost(e) {
                 showToast('僅 Admin 具備設定同步網址之權限', 'error');
                 return;
             }
-            const url = document.getElementById('gasWebhookUrl').value.trim();
+            let url = document.getElementById('gasWebhookUrl').value.trim();
+
+            if (url.includes('docs.google.com/spreadsheets')) {
+                showToast('錯誤：您輸入的是 Google 試算表網址，請填寫 Apps Script Web App 網址！', 'error');
+                return;
+            }
+
+            if (url.includes('/edit') || url.includes('/dev')) {
+                url = url.replace(/\/edit.*$/, '/exec').replace(/\/dev.*$/, '/exec');
+                document.getElementById('gasWebhookUrl').value = url;
+            }
+
             if (url && !url.includes('/exec')) {
                 showToast('警告：格式不正確！Apps Script 網址必須以 /exec 結尾。', 'error');
                 return;
             }
+
             localStorage.setItem('gas_webhook_url', url);
             showToast('Google 試算表同步網址已成功儲存！', 'success');
         }
