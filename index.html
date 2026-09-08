@@ -197,6 +197,10 @@
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
                 <div class="flex flex-wrap items-center gap-3">
                     <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">月份</label>
+                        <input type="month" id="reportMonth" onchange="renderReportTable()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1">班別</label>
                         <select id="reportClass" onchange="renderReportTable()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
                         </select>
@@ -219,7 +223,7 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
                     <div class="p-3 bg-red-100 text-red-600 rounded-lg"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
                     <div>
@@ -234,22 +238,16 @@
                         <div id="totalTaskCount" class="text-2xl font-black text-slate-800">0</div>
                     </div>
                 </div>
-            </div>
-
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mt-4">
-                <div class="pb-2 font-bold text-slate-700 text-sm flex justify-between items-center border-b border-slate-100 mb-3">
-                    <div class="flex items-center space-x-2">
-                        <div class="p-1.5 bg-indigo-100 text-indigo-600 rounded"><i class="fa-solid fa-calendar-days"></i></div>
-                        <span>每月欠交人數統計 (不達標指標)</span>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="p-3 bg-amber-100 text-amber-600 rounded-lg"><i class="fa-solid fa-user-xmark text-2xl"></i></div>
+                    <div>
+                        <div class="text-xs text-slate-500 font-bold uppercase">當月不達標人數 (欠交/全班)</div>
+                        <div id="monthlyMissingRatio" class="text-2xl font-black text-slate-800">0/0</div>
                     </div>
-                    <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded font-normal"><i class="fa-solid fa-circle-info mr-1"></i>該月曾欠交一次即視為全月不達標</span>
-                </div>
-                <div id="monthlyStatsContainer" class="flex flex-col">
-                    <!-- 動態產生 -->
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-4">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm flex justify-between items-center">
                     <span>欠交學生明細紀錄 (僅顯示有欠交之學生，已按班別排序)</span>
                     <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded font-normal"><i class="fa-solid fa-filter mr-1"></i>已自動過濾「已繳交」紀錄</span>
@@ -275,6 +273,7 @@
         </section>
 
         <section id="view-admin" class="hidden space-y-6">
+            <!-- Admin 視圖內容不變 -->
             <div id="adminAccessWarning" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800 flex items-center space-x-3">
                 <i class="fa-solid fa-lock text-xl text-amber-600"></i>
                 <div>
@@ -434,7 +433,7 @@
 
     </main>
 
-    <!-- Modal 1: 批量匯入 Modal -->
+    <!-- Modal 部分不變 -->
     <div id="importModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-xl w-full p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
@@ -475,7 +474,6 @@
         </div>
     </div>
 
-    <!-- Modal 2: 新增/編輯學生 Modal -->
     <div id="studentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
@@ -511,7 +509,6 @@
         </div>
     </div>
 
-    <!-- Modal 3: JSON Inspector 視窗 Modal -->
     <div id="jsonInspectorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
@@ -532,7 +529,6 @@
         </div>
     </div>
 
-    <!-- Modal 4: Google Apps Script 教學 Modal -->
     <div id="gasScriptModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
@@ -554,7 +550,6 @@
         </div>
     </div>
 
-    <!-- Modal 5: 自訂確認對話框 Modal -->
     <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 space-y-4 text-center">
             <div class="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-xl">
@@ -569,7 +564,6 @@
         </div>
     </div>
 
-    <!-- 提交進度 Overlay特效 -->
     <div id="submitOverlay" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[100] hidden flex-col items-center justify-center text-white transition-opacity duration-300 opacity-0">
         <div id="submitOverlayIcon" class="text-6xl mb-4">
             <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
@@ -577,7 +571,6 @@
         <h2 id="submitOverlayText" class="text-2xl font-bold tracking-wide">處理中...</h2>
     </div>
 
-    <!-- 全局提示 Toast -->
     <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center space-x-3 transition-opacity duration-300 opacity-0 pointer-events-none">
         <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
         <span id="toastMsg" class="text-sm font-medium">操作成功</span>
@@ -877,7 +870,7 @@
                     classesDB = JSON.parse(JSON.stringify(SEED_CLASSES_DB));
                     studentsDB = JSON.parse(JSON.stringify(SEED_STUDENTS_DB));
                     homeworkLogsDB = JSON.parse(JSON.stringify(SEED_HOMEWORK_LOGS_DB));
-                    currentClassTasks = {}; 
+                    currentClassTasks = {};
                     
                     saveAllAndSyncCloud(true);
 
@@ -897,8 +890,17 @@
         window.onload = function() {
             loadFromLocalStorage();
 
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('regDate').value = today;
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+
+            document.getElementById('regDate').value = `${year}-${month}-${day}`;
+            
+            const reportMonthElem = document.getElementById('reportMonth');
+            if (reportMonthElem) {
+                reportMonthElem.value = `${year}-${month}`;
+            }
 
             const savedGasUrl = localStorage.getItem('gas_webhook_url') || DEFAULT_GAS_URL;
             document.getElementById('gasWebhookUrl').value = savedGasUrl;
@@ -964,7 +966,7 @@
         }
 
         function onRegContextChange() {
-            renderActiveTaskChips(); 
+            renderActiveTaskChips();
             renderTodayRegisteredTasksSummary();
             loadStudentGrid();
         }
@@ -1352,12 +1354,14 @@
         function getFilteredMissingLogs() {
             const selectedClass = document.getElementById('reportClass').value;
             const selectedSub = document.getElementById('reportSubject').value;
+            const selectedMonth = document.getElementById('reportMonth')?.value || '';
 
             return homeworkLogsDB.filter(log => {
                 const matchClass = (selectedClass === 'ALL' || log.class === selectedClass);
                 const matchSub = (selectedSub === 'ALL' || log.subject === selectedSub);
+                const matchMonth = (!selectedMonth || (log.date && log.date.startsWith(selectedMonth)));
                 const isMissingOnly = log.isMissing === true;
-                return matchClass && matchSub && isMissingOnly;
+                return matchClass && matchSub && matchMonth && isMissingOnly;
             }).sort((a, b) => {
                 if (a.class !== b.class) return compareClasses(a.class, b.class);
                 return b.date.localeCompare(a.date);
@@ -1368,6 +1372,10 @@
             const tbody = document.getElementById('reportTableBody');
             tbody.innerHTML = '';
 
+            const selectedClass = document.getElementById('reportClass').value;
+            const selectedSub = document.getElementById('reportSubject').value;
+            const selectedMonth = document.getElementById('reportMonth')?.value || '';
+
             const filtered = getFilteredMissingLogs();
 
             let missingCount = filtered.length;
@@ -1376,11 +1384,35 @@
             document.getElementById('totalMissingCount').textContent = missingCount;
             document.getElementById('totalTaskCount').textContent = taskSet.size;
 
+            // 計算每月欠交人數 (只要當月欠交一次即為不達標)
+            const targetMonth = selectedMonth || new Date().toISOString().slice(0, 7);
+
+            let totalClassStudents = 0;
+            if (selectedClass === 'ALL') {
+                totalClassStudents = studentsDB.filter(s => s.status === 'Active').length;
+            } else {
+                totalClassStudents = studentsDB.filter(s => s.class === selectedClass && s.status === 'Active').length;
+            }
+
+            const defaultedStudentsSet = new Set();
+            homeworkLogsDB.forEach(log => {
+                if (log.isMissing && log.date && log.date.startsWith(targetMonth)) {
+                    const matchClass = (selectedClass === 'ALL' || log.class === selectedClass);
+                    const matchSub = (selectedSub === 'ALL' || log.subject === selectedSub);
+                    if (matchClass && matchSub) {
+                        defaultedStudentsSet.add(`${log.class}_${log.studentName}`);
+                    }
+                }
+            });
+
+            const defaultedCount = defaultedStudentsSet.size;
+            const monthlyRatioElem = document.getElementById('monthlyMissingRatio');
+            if (monthlyRatioElem) {
+                monthlyRatioElem.textContent = `${defaultedCount}/${totalClassStudents}`;
+            }
+
             if (filtered.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">尚無任何欠交紀錄</td></tr>`;
-                
-                // Add this to update monthly stats even when empty
-                renderMonthlyStats();
                 return;
             }
 
@@ -1406,79 +1438,6 @@
                 `;
                 tbody.appendChild(tr);
             });
-
-            // Call the new monthly stats rendering function
-            renderMonthlyStats();
-        }
-
-        function renderMonthlyStats() {
-            const container = document.getElementById('monthlyStatsContainer');
-            if (!container) return;
-            container.innerHTML = '';
-
-            const selectedClass = document.getElementById('reportClass').value;
-            const selectedSub = document.getElementById('reportSubject').value;
-
-            // Filter base logs based on current subject and class selection
-            const filteredLogs = homeworkLogsDB.filter(l => 
-                (selectedSub === 'ALL' || l.subject === selectedSub) &&
-                (selectedClass === 'ALL' || l.class === selectedClass)
-            );
-
-            // Extract all unique months (YYYY-MM) present in the filtered data
-            const allMonths = [...new Set(filteredLogs.map(l => l.date.substring(0, 7)))].sort((a, b) => b.localeCompare(a));
-
-            if (allMonths.length === 0) {
-                container.innerHTML = '<div class="text-xs text-slate-400 p-3 text-center bg-slate-50 rounded">選定條件下目前無任何欠交紀錄可供統計。</div>';
-                return;
-            }
-
-            // Calculate total active students in the selected scope (the 'y' in x/y)
-            const totalStudents = studentsDB.filter(s => 
-                s.status === 'Active' && 
-                (selectedClass === 'ALL' || s.class === selectedClass)
-            ).length;
-
-            if (totalStudents === 0) {
-                container.innerHTML = '<div class="text-xs text-slate-400 p-3 text-center bg-slate-50 rounded">此選定條件下無在學學生。</div>';
-                return;
-            }
-
-            const row = document.createElement('div');
-            row.className = 'flex flex-wrap gap-2 py-2';
-
-            let monthChips = '';
-
-            allMonths.forEach(month => {
-                // Find missing logs specifically for this month
-                const monthMissingLogs = filteredLogs.filter(l =>
-                    l.date.startsWith(month) &&
-                    l.isMissing === true
-                );
-
-                // Use Set to ensure each student is only counted once per month (the 'x' in x/y)
-                // We combine class and name to ensure uniqueness across the whole school if "ALL" is selected
-                const missingStudentsSet = new Set(monthMissingLogs.map(l => l.class + '_' + l.studentName));
-                const missingCount = missingStudentsSet.size;
-
-                // Determine badge styling based on missing count severity
-                let badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                if (missingCount > 0) {
-                    badgeClass = missingCount >= (totalStudents / 2) 
-                        ? 'bg-red-50 text-red-700 border-red-200' 
-                        : 'bg-amber-50 text-amber-700 border-amber-200';
-                }
-
-                monthChips += `
-                    <div class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm border ${badgeClass} shadow-sm whitespace-nowrap transition-colors hover:shadow">
-                        <span class="mr-2 font-bold tracking-wide">${month}</span>
-                        <span class="bg-white/70 px-2 py-0.5 rounded text-[11px] font-black tracking-wider">${missingCount}/${totalStudents}</span>
-                    </div>
-                `;
-            });
-
-            row.innerHTML = monthChips;
-            container.appendChild(row);
         }
 
         function exportReportToExcel() {
@@ -2051,7 +2010,7 @@
                 });
 
                 homeworkLogsDB = [];
-                currentClassTasks = {}; 
+                currentClassTasks = {};
 
                 saveAllAndSyncCloud(true);
                 
