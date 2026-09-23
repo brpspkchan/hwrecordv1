@@ -2156,7 +2156,7 @@ function makeLogKey(date, cls, subject, taskName, studentName) {
         const toast = document.getElementById('toast');
         const toastMsg = document.getElementById('toastMsg');
         const toastIcon = document.getElementById('toastIcon');
-        if (!toast || !toastMsg) return;
+        if (!toast || !toastMsg || !toastIcon) return;
 
         toastMsg.textContent = msg;
         if (type === 'warning') {
@@ -2177,9 +2177,7 @@ function makeLogKey(date, cls, subject, taskName, studentName) {
         }, 3000);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-        initSystem();
-    });
+    window.onload = initSystem;
     </script>
 </body>
 </html>
