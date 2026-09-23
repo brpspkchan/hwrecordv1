@@ -631,7 +631,7 @@
 
     <script>
     const SYSTEM_PASSWORD = 'bhhsrps';
-   const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwlx8C9NAq_ehYxzV3SegWS_Qcm2U5LpD7J38UiRsELXFDcw_QQOuiU2oynUmuJDlcj/exec";
+    const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwlx8C9NAq_ehYxzV3SegWS_Qcm2U5LpD7J38UiRsELXFDcw_QQOuiU2oynUmuJDlcj/exec";
 
     // Global application variables
     let homeworkLogs = [];               
@@ -808,13 +808,17 @@
 
         cloudLogs.forEach(item => {
             const key = buildLogKey(item);
-            logMap.set(key, normalizeLog(item));
+            const normalized = normalizeLog(item);
+            if (normalized.isMissing) {
+                logMap.set(key, normalized);
+            }
         });
 
         homeworkLogs.forEach(item => {
             const key = buildLogKey(item);
-            if (!logMap.has(key)) {
-                logMap.set(key, normalizeLog(item));
+            const normalized = normalizeLog(item);
+            if (normalized.isMissing) {
+                logMap.set(key, normalized);
             }
         });
 
@@ -1018,14 +1022,14 @@
         const currentStudents = studentsDB.filter(s => s.class === regClass && (!s.status || String(s.status).toLowerCase() === 'active')).sort((a,b)=>a.seat-b.seat);
         const taskList = getCurrentTaskList();
 
-        const newLogsCreated = [];
+        const logsToSend = [];
 
-        // Filter out existing entries in local cache for current day+class+subject+task
+        // 清除本機快取中當天該班別/科目的舊紀錄，準備重新整合
         taskList.forEach(taskName => {
             homeworkLogs = homeworkLogs.filter(l => !(toShortDateString(l.date) === regDate && l.class === regClass && l.subject === regSubject && l.taskName === taskName));
         });
 
-        // Collect grid missing selections
+        // 收集表單勾選狀態
         currentStudents.forEach((student, idx) => {
             const attSelect = document.querySelectorAll('.attendance-select')[idx];
             const remark = document.getElementById(`remark_${idx}`);
@@ -1034,25 +1038,30 @@
                 taskList.forEach((taskName, tIdx) => {
                     const chk = document.getElementById(`chk_${idx}_${tIdx}`);
                     const isMissing = chk ? chk.checked : false;
-                    if (attendance === 'Present' && isMissing) {
-                        const logObj = {
-                            date: regDateFull,
-                            class: regClass,
-                            subject: regSubject,
-                            taskName: taskName,
-                            studentName: student.name,
-                            attendance: attendance,
-                            isMissing: true,
-                            remark: remark ? remark.value : ''
-                        };
+                    const isMissingStatus = (attendance === 'Present' && isMissing);
+
+                    const logObj = {
+                        date: regDateFull,
+                        class: regClass,
+                        subject: regSubject,
+                        taskName: taskName,
+                        studentName: student.name,
+                        attendance: attendance,
+                        isMissing: isMissingStatus,
+                        remark: remark ? remark.value : ''
+                    };
+
+                    // 僅有欠交的存入本機 LocalStorage 快取
+                    if (isMissingStatus) {
                         homeworkLogs.push(logObj);
-                        newLogsCreated.push(logObj);
                     }
+                    // 將該作業項目的所有學生新狀態傳給後端進行 Upsert 比對
+                    logsToSend.push(logObj);
                 });
             }
         });
 
-        await syncHomeworkLogsToCloud(newLogsCreated);
+        await syncHomeworkLogsToCloud(logsToSend);
         renderTodayRegisteredTasksSummary();
         renderReportTable();
         renderAnalyticsView();
@@ -1265,9 +1274,21 @@
     function deleteRegisteredTaskLog(date, className, subject, taskName) {
         const displayTask = taskName === '' ? '(未命名作業)' : taskName;
         showConfirm('刪除登記紀錄', `確定要刪除 [${date} ${className} ${subject} - ${displayTask}] 的欠交紀錄？`, () => {
+            const currentStudents = studentsDB.filter(s => s.class === className);
+            const logsToSend = currentStudents.map(student => ({
+                date: toFullDateString(date),
+                class: className,
+                subject: subject,
+                taskName: taskName,
+                studentName: student.name,
+                attendance: 'Present',
+                isMissing: false,
+                remark: '已取消紀錄'
+            }));
+
             homeworkLogs = homeworkLogs.filter(l => !(toShortDateString(l.date) === date && l.class === className && l.subject === subject && l.taskName === taskName));
             saveToLocalStorageOnly();
-            syncHomeworkLogsToCloud();
+            syncHomeworkLogsToCloud(logsToSend);
             renderTodayRegisteredTasksSummary();
             loadStudentGrid();
             renderReportTable();
@@ -1316,7 +1337,6 @@
             } else {
                 taskList.forEach((task, tIdx) => {
                     const displayTask = task === '' ? '(未命名作業)' : task;
-                    // Auto restore checkmark
                     const isAlreadyMissing = homeworkLogs.some(l => 
                         toShortDateString(l.date) === regDate && 
                         l.class === selectedClass && 
@@ -1536,9 +1556,20 @@
 
     function removeSingleLogItem(date, className, subject, taskName, studentName) {
         showConfirm('刪除單筆欠交', `確定要將 [${studentName}] 於 ${date} 的 [${taskName}] 欠交紀錄刪除？`, () => {
+            const cancelLog = [{
+                date: toFullDateString(date),
+                class: className,
+                subject: subject,
+                taskName: taskName,
+                studentName: studentName,
+                attendance: 'Present',
+                isMissing: false,
+                remark: '已手動刪除'
+            }];
+
             homeworkLogs = homeworkLogs.filter(l => !(toShortDateString(l.date) === date && l.class === className && l.subject === subject && l.taskName === taskName && l.studentName === studentName));
             saveToLocalStorageOnly();
-            syncHomeworkLogsToCloud();
+            syncHomeworkLogsToCloud(cancelLog);
             renderReportTable();
             renderAnalyticsView();
             loadStudentGrid();
@@ -1935,7 +1966,7 @@
     function getGasScriptCode() {
         return `// Google Apps Script (Code.gs)
 function doGet(e) {
-  const action = e.parameter.action;
+  const action = e.parameter ? e.parameter.action : '';
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
   if (action === 'getLogs') {
@@ -1943,7 +1974,7 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
   
-  return ContentService.createTextOutput(JSON.stringify({status: 'success', message: 'Ready'}));
+  return ContentService.createTextOutput(JSON.stringify({status: 'success', message: '系統運作正常'}));
 }
 
 function doPost(e) {
@@ -1956,9 +1987,10 @@ function doPost(e) {
       if (data.students) saveStudents(ss, data.students);
       if (data.logs) saveLogs(ss, data.logs);
       
-      return ContentService.createTextOutput(JSON.stringify({status: 'success'}))
+      return ContentService.createTextOutput(JSON.stringify({status: 'success', message: '資料寫入同步完成'}))
         .setMimeType(ContentService.MimeType.JSON);
     }
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: '未知的操作類別'}));
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({status: 'error', message: error.toString()}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -1989,16 +2021,67 @@ function getSheetData(ss, sheetName) {
 
 function saveClasses(ss, classes) {
   let sheet = ss.getSheetByName('Classes') || ss.insertSheet('Classes');
-  sheet.clear();
-  sheet.appendRow(['id', 'name']);
-  classes.forEach(c => sheet.appendRow([c.id, c.name]));
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['id', 'name']);
+  }
+  if (!Array.isArray(classes) || classes.length === 0) return;
+
+  const data = sheet.getDataRange().getValues();
+  const keyToRowIndex = {};
+  for (let i = 1; i < data.length; i++) {
+    const id = String(data[i][0] || '').trim().toUpperCase();
+    if (id) keyToRowIndex[id] = i + 1;
+  }
+
+  const rowsToAppend = [];
+  classes.forEach(c => {
+    const id = String(c.id || '').trim().toUpperCase();
+    const rowData = [c.id, c.name];
+    if (keyToRowIndex[id]) {
+      sheet.getRange(keyToRowIndex[id], 1, 1, 2).setValues([rowData]);
+    } else {
+      rowsToAppend.push(rowData);
+    }
+  });
+
+  if (rowsToAppend.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 2).setValues(rowsToAppend);
+  }
 }
 
 function saveStudents(ss, students) {
   let sheet = ss.getSheetByName('Students') || ss.insertSheet('Students');
-  sheet.clear();
-  sheet.appendRow(['class', 'seat', 'name', 'nameEn', 'status']);
-  students.forEach(s => sheet.appendRow([s.class, s.seat, s.name, s.nameEn || '', s.status || 'Active']));
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['class', 'seat', 'name', 'nameEn', 'status']);
+  }
+  if (!Array.isArray(students) || students.length === 0) return;
+
+  const data = sheet.getDataRange().getValues();
+  const keyToRowIndex = {};
+  for (let i = 1; i < data.length; i++) {
+    const cls = String(data[i][0] || '').trim().toUpperCase();
+    const name = String(data[i][2] || '').trim();
+    const key = cls + '___' + name;
+    if (cls && name) keyToRowIndex[key] = i + 1;
+  }
+
+  const rowsToAppend = [];
+  students.forEach(s => {
+    const cls = String(s.class || '').trim().toUpperCase();
+    const name = String(s.name || '').trim();
+    const key = cls + '___' + name;
+    const rowData = [s.class, s.seat, s.name, s.nameEn || '', s.status || 'Active'];
+
+    if (keyToRowIndex[key]) {
+      sheet.getRange(keyToRowIndex[key], 1, 1, 5).setValues([rowData]);
+    } else {
+      rowsToAppend.push(rowData);
+    }
+  });
+
+  if (rowsToAppend.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 5).setValues(rowsToAppend);
+  }
 }
 
 function saveLogs(ss, newLogs) {
@@ -2007,9 +2090,65 @@ function saveLogs(ss, newLogs) {
     sheet.appendRow(['date', 'class', 'subject', 'taskName', 'studentName', 'attendance', 'isMissing', 'remark']);
   }
   
+  if (!Array.isArray(newLogs) || newLogs.length === 0) return;
+
+  const data = sheet.getDataRange().getValues();
+  const keyToRowIndex = {};
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const key = makeLogKey(row[0], row[1], row[2], row[3], row[4]);
+    keyToRowIndex[key] = i + 1;
+  }
+
+  const rowsToAppend = [];
+
   newLogs.forEach(l => {
-    sheet.appendRow([l.date, l.class, l.subject, l.taskName, l.studentName, l.attendance, l.isMissing, l.remark || '']);
+    const key = makeLogKey(l.date, l.class, l.subject, l.taskName, l.studentName);
+    const isMissingBool = (l.isMissing === true || String(l.isMissing).toUpperCase() === 'TRUE' || l.isMissing == 1);
+    
+    const rowData = [
+      l.date,
+      l.class,
+      l.subject,
+      l.taskName,
+      l.studentName,
+      l.attendance,
+      isMissingBool,
+      l.remark || ''
+    ];
+
+    if (keyToRowIndex[key]) {
+      const rowIndex = keyToRowIndex[key];
+      sheet.getRange(rowIndex, 1, 1, 8).setValues([rowData]);
+    } else if (isMissingBool) {
+      rowsToAppend.push(rowData);
+    }
   });
+
+  if (rowsToAppend.length > 0) {
+    const startRow = sheet.getLastRow() + 1;
+    sheet.getRange(startRow, 1, rowsToAppend.length, 8).setValues(rowsToAppend);
+  }
+}
+
+function makeLogKey(date, cls, subject, taskName, studentName) {
+  var d = '';
+  if (date instanceof Date) {
+    var y = date.getFullYear();
+    var m = ('0' + (date.getMonth() + 1)).slice(-2);
+    var day = ('0' + date.getDate()).slice(-2);
+    d = y + '-' + m + '-' + day;
+  } else {
+    d = String(date || '').trim().slice(0, 10);
+  }
+  
+  var c = String(cls || '').trim().toUpperCase();
+  var s = String(subject || '').trim();
+  var t = String(taskName || '').trim() || '未命名作業';
+  var name = String(studentName || '').trim();
+  
+  return d + '___' + c + '___' + s + '___' + t + '___' + name;
 }`;
     }
 
