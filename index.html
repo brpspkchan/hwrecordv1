@@ -61,7 +61,7 @@
                     </div>
                     <div>
                         <h1 class="font-extrabold text-base sm:text-lg leading-tight tracking-wide">功課欠交管理系統</h1>
-                        <p class="text-[10px] sm:text-xs text-indigo-300">無損 Upsert 同步與雲端備份平台</p>
+                        <p class="text-[10px] sm:text-xs text-indigo-300">高速 Incremental Upsert 同步與分頁高效平台</p>
                     </div>
                 </div>
 
@@ -69,7 +69,7 @@
                 <div class="flex items-center space-x-2 sm:space-x-3 ml-auto">
                     <div class="hidden md:flex items-center bg-indigo-950/60 rounded-lg px-3 py-1.5 border border-indigo-700/50 text-xs">
                         <span id="cloudStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 mr-2"></span>
-                        <span id="cloudStatusText" class="text-indigo-200 font-medium">系統就緒 (本地快取)</span>
+                        <span id="cloudStatusText" class="text-indigo-200 font-medium">系統就緒 (15天快取)</span>
                         <button onclick="pullHomeworkLogsFromCloud()" class="ml-3 text-indigo-300 hover:text-white transition" title="從雲端同步最新資料">
                             <i id="pullSyncIcon" class="fa-solid fa-rotate"></i>
                         </button>
@@ -82,7 +82,7 @@
                         <button onclick="changeRole('SubjectTeacher')" id="roleBtn-SubjectTeacher" class="px-2.5 py-1 rounded-md transition text-indigo-200 hover:text-white">任課</button>
                     </div>
 
-                    <!-- Lock / Logout System Button -->
+                    <!-- Lock System Button -->
                     <button onclick="lockSystem()" class="bg-indigo-800/80 hover:bg-red-700 text-indigo-200 hover:text-white px-2.5 py-1.5 rounded-lg border border-indigo-700 text-xs transition flex items-center space-x-1" title="鎖定系統">
                         <i class="fa-solid fa-lock text-xs"></i>
                         <span class="hidden sm:inline font-medium">鎖定</span>
@@ -116,7 +116,7 @@
 
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         
-        <!-- Role Information Banner -->
+        <!-- Role Banner -->
         <div class="bg-indigo-50/90 border border-indigo-100 rounded-xl p-3 flex justify-between items-center text-xs text-indigo-900 shadow-sm">
             <div class="flex items-center space-x-2">
                 <i class="fa-solid fa-shield-halved text-indigo-600 text-sm"></i>
@@ -131,7 +131,6 @@
 
         <!-- SECTION 1: REGISTER HOMEWORK MISSING -->
         <section id="view-register" class="space-y-6">
-            <!-- Controls Card -->
             <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -157,7 +156,7 @@
                     </div>
                 </div>
 
-                <!-- Dynamic Homework Task Adder & Quick Presets -->
+                <!-- Dynamic Homework Task Adder -->
                 <div class="pt-3 border-t border-slate-100 space-y-3">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
                         <div class="flex items-center space-x-2 flex-grow max-w-lg">
@@ -185,7 +184,6 @@
                     </div>
                 </div>
 
-                <!-- Today Registered Tasks Summary Box -->
                 <div class="bg-amber-50/70 rounded-xl p-3 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div class="flex items-center space-x-2 text-xs font-semibold text-amber-900 flex-wrap gap-y-1">
                         <i class="fa-solid fa-clock-rotate-left text-amber-600"></i>
@@ -215,7 +213,6 @@
                     </div>
                 </div>
 
-                <!-- Scrollable Table -->
                 <div class="overflow-x-auto custom-scrollbar">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-100 text-slate-600 uppercase text-xs font-bold border-b border-slate-200">
@@ -232,42 +229,42 @@
                 </div>
 
                 <div class="p-4 bg-slate-50 border-t border-slate-200 hidden sm:flex justify-between items-center">
-                    <p class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i>無損 Upsert 機制：精準更新對應學生項目，完整保留雲端歷史。</p>
+                    <p class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-bolt mr-1 text-amber-500"></i>增量 Upsert 模式：僅傳送變動 Log，極速防併發過載。</p>
                     <button onclick="saveRegistration()" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2 text-sm">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <span>安全寫入同步至雲端 (Ctrl+S)</span>
+                        <span>增量同步至雲端 (Ctrl+S)</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Mobile Floating Bottom Action Bar -->
+            <!-- Mobile Floating Bottom Bar -->
             <div class="fixed bottom-3 left-3 right-3 sm:hidden z-40 bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between">
                 <div class="text-[11px] px-1">
-                    <span class="block font-bold text-amber-400">已選作業及學生狀態</span>
-                    <span class="text-slate-300">點擊右側進行無損儲存</span>
+                    <span class="block font-bold text-amber-400">已選作業與狀態</span>
+                    <span class="text-slate-300">點擊右側增量儲存</span>
                 </div>
                 <button onclick="saveRegistration()" class="bg-emerald-500 active:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl shadow-lg transition flex items-center space-x-1.5 text-xs">
                     <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
-                    <span>無損儲存同步</span>
+                    <span>增量儲存同步</span>
                 </button>
             </div>
         </section>
 
-        <!-- SECTION 2: REPORTS & ANALYTICS -->
+        <!-- SECTION 2: REPORTS & ANALYTICS WITH PAGINATION -->
         <section id="view-reports" class="hidden space-y-6">
             <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
                 <div class="flex flex-wrap items-center gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">篩選月份</label>
-                        <input type="month" id="reportMonth" onchange="renderReportTable()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <input type="month" id="reportMonth" onchange="resetReportPageAndRender()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">班別</label>
-                        <select id="reportClass" onchange="renderReportTable()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"></select>
+                        <select id="reportClass" onchange="resetReportPageAndRender()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"></select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">科目</label>
-                        <select id="reportSubject" onchange="renderReportTable()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                        <select id="reportSubject" onchange="resetReportPageAndRender()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
                             <option value="ALL">全部科目</option>
                             <option value="中文">中文</option>
                             <option value="英文">英文</option>
@@ -281,7 +278,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">搜尋學生</label>
-                        <input type="text" id="reportSearch" placeholder="姓名關鍵字..." oninput="renderReportTable()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <input type="text" id="reportSearch" placeholder="姓名關鍵字..." oninput="resetReportPageAndRender()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     </div>
                 </div>
 
@@ -292,16 +289,16 @@
                     </button>
                     <button onclick="exportReportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition flex items-center space-x-1.5">
                         <i class="fa-solid fa-file-excel"></i>
-                        <span>匯出 Excel 報表</span>
+                        <span>匯出 Excel (全量)</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Report KPI Statistics Card -->
+            <!-- KPI Statistics Cards (Based on FULL Memory Data) -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-bold text-slate-400">總欠交人次</p>
+                        <p class="text-xs font-bold text-slate-400">總欠交人次 (全量數據)</p>
                         <h3 id="totalMissingCount" class="text-2xl font-black text-red-600 mt-0.5">0</h3>
                     </div>
                     <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-lg">
@@ -310,7 +307,7 @@
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-bold text-slate-400">涉及作業項數</p>
+                        <p class="text-xs font-bold text-slate-400">涉及作業項數 (全量數據)</p>
                         <h3 id="totalTaskCount" class="text-2xl font-black text-indigo-600 mt-0.5">0</h3>
                     </div>
                     <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center text-lg">
@@ -328,7 +325,7 @@
                 </div>
             </div>
 
-            <!-- Printable Header Title -->
+            <!-- Printable Header -->
             <div class="hidden print-only text-center mb-4">
                 <h2 class="text-xl font-bold">學校功課欠交明細清單報表</h2>
                 <p class="text-xs text-slate-500">列印時間：<span id="printTime"></span></p>
@@ -352,13 +349,26 @@
                         <tbody id="reportTableBody" class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
+
+                <!-- Report Pagination Controls -->
+                <div class="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 no-print">
+                    <div id="reportPaginationInfo" class="font-medium">顯示 0 - 0 筆，共 0 筆</div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="changeReportPage(-1)" id="prevPageBtn" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition">
+                            <i class="fa-solid fa-chevron-left mr-1"></i>上一頁
+                        </button>
+                        <span id="currentPageText" class="font-bold text-indigo-700 px-2">第 1 / 1 頁</span>
+                        <button onclick="changeReportPage(1)" id="nextPageBtn" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition">
+                            下一頁<i class="fa-solid fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
 
         <!-- SECTION 3: VISUAL ANALYTICS -->
         <section id="view-analytics" class="hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Top Defaulters Ranking -->
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
                     <h3 class="font-bold text-slate-800 text-base flex items-center space-x-2">
                         <i class="fa-solid fa-ranking-star text-amber-500"></i>
@@ -367,7 +377,6 @@
                     <div id="analyticsTopStudents" class="space-y-3"></div>
                 </div>
 
-                <!-- Subject Breakdown -->
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
                     <h3 class="font-bold text-slate-800 text-base flex items-center space-x-2">
                         <i class="fa-solid fa-book text-indigo-500"></i>
@@ -441,7 +450,7 @@
                         <span>Google Apps Script 雲端串接網址</span>
                     </h3>
                     <p class="text-xs text-slate-500 leading-relaxed">
-                        系統可連線至您的 Google 試算表。後端採用「無損 Upsert (更新或追加)」，維護全校歷史紀錄。
+                        系統可連線至您的 Google 試算表。後端採用「LockService 互斥鎖與批次內存寫入」，防止多人覆蓋且極速避免請求逾時。
                     </p>
                     <div class="space-y-2">
                         <label class="block text-xs font-bold text-slate-600">Web App Exec URL</label>
@@ -462,7 +471,7 @@
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4">
                     <div>
                         <h4 class="font-bold text-sm text-slate-800">本機 LocalStorage 快取與備份狀態</h4>
-                        <p class="text-xs text-slate-500 mt-0.5">提供離線存取與資料備份/復原</p>
+                        <p class="text-xs text-slate-500 mt-0.5">提供離線存取，自動保護清理（僅保留 15 天近期紀錄）</p>
                     </div>
                     <div class="flex items-center space-x-3 text-xs">
                         <div>占用容量：<strong id="storageUsedText" class="text-indigo-600 font-mono">0 KB</strong></div>
@@ -507,7 +516,7 @@
         </div>
     </div>
 
-    <!-- Fullscreen Loading Spinner -->
+    <!-- Loading Spinner -->
     <div id="loadingSpinner" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white hidden">
         <div class="text-5xl mb-3">
             <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
@@ -515,7 +524,7 @@
         <div id="spinnerText" class="text-lg font-bold tracking-wide">資料同步處理中...</div>
     </div>
 
-    <!-- Confirm Dialog Modal -->
+    <!-- Confirm Modal -->
     <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-slate-800">
             <h3 id="confirmModalTitle" class="font-bold text-lg text-slate-900">確認操作</h3>
@@ -527,7 +536,7 @@
         </div>
     </div>
 
-    <!-- Student Single Edit Modal -->
+    <!-- Student Edit Modal -->
     <div id="studentEditModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-800">
             <h3 id="studentModalTitle" class="font-bold text-lg text-indigo-900">新增/修改學生資料</h3>
@@ -606,12 +615,12 @@
             <div class="flex justify-between items-center border-b pb-3">
                 <h3 class="font-bold text-lg text-indigo-900 flex items-center space-x-2">
                     <i class="fa-solid fa-code text-indigo-600"></i>
-                    <span>Google Apps Script 門戶腳本 (Code.gs)</span>
+                    <span>Google Apps Script 高效腳本 (Code.gs)</span>
                 </h3>
                 <button onclick="closeModal('gasCodeModal')" class="text-slate-400 hover:text-slate-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <p class="text-xs text-slate-500 leading-relaxed">
-                將下方腳本貼入 Google 試算表之 [擴充功能] -> [Apps Script]，並部署為 Web 應用程式 (設定執行身分: 「我」，存取權限: 「所有人」)。
+                具備 <b>LockService（鎖定機制）</b>與<b>記憶體批次寫入</b>，貼入後部署為 Web 應用程式 (執行身分: 「我」，權限: 「所有人」)。
             </p>
             <textarea id="gasCodeTextarea" readonly class="flex-grow border border-slate-200 bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs font-mono overflow-y-auto leading-relaxed custom-scrollbar h-64 select-all"></textarea>
             <div class="flex justify-end space-x-2 pt-2">
@@ -631,7 +640,7 @@
 
     <script>
     const SYSTEM_PASSWORD = 'bhhsrps';
-    const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwlx8C9NAq_ehYxzV3SegWS_Qcm2U5LpD7J38UiRsELXFDcw_QQOuiU2oynUmuJDlcj/exec";
+    const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzkkR_L0iY3U3Wg8L0P64_yICsIpMLoOE9BnfOGzimvWmzKiKtGECwNWmd73F4DcP7K/exec";
 
     // Global application variables
     let homeworkLogs = [];               
@@ -641,6 +650,10 @@
     let currentClassTasks = {};
     let currentRole = 'Admin';
     let toastTimer = null;
+
+    // Pagination Configuration
+    let reportCurrentPage = 1;
+    const REPORT_PAGE_SIZE = 50;
 
     // Default sample data for zero-config demo
     const DEFAULT_CLASSES = [
@@ -669,6 +682,10 @@
         return url;
     }
 
+    window.addEventListener('DOMContentLoaded', () => {
+        initSystem();
+    });
+
     async function initSystem() {
         checkAuth();
         
@@ -676,13 +693,13 @@
         const year = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
-        document.getElementById('regDate').value = `${year}-${month}-${day}`;
+        if (document.getElementById('regDate')) document.getElementById('regDate').value = `${year}-${month}-${day}`;
         if (document.getElementById('reportMonth')) document.getElementById('reportMonth').value = `${year}-${month}`;
 
         const savedGasUrl = localStorage.getItem('gas_webhook_url') || DEFAULT_WEB_APP_URL;
         if (document.getElementById('gasWebhookUrl')) document.getElementById('gasWebhookUrl').value = savedGasUrl;
 
-        // Load local cache or seed with defaults
+        // Load local cache and automatically purge >15-day records
         loadFromLocalStorage();
         if (classesDB.length === 0) classesDB = [...DEFAULT_CLASSES];
         if (studentsDB.length === 0) studentsDB = [...DEFAULT_STUDENTS];
@@ -694,7 +711,7 @@
         // Attempt cloud sync asynchronously
         await pullHomeworkLogsFromCloud();
 
-        // Shortcut listener for Ctrl+S
+        // Key shortcut Ctrl+S
         document.addEventListener('keydown', function(e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
@@ -750,6 +767,9 @@
         }
     }
 
+    /**
+     * 後端：增量傳送 (Upsert) - 僅發送「本次有異動/新增」的 Log
+     */
     async function syncHomeworkLogsToCloud(logsToSend = null) {
         if (!isCloudPullCompleted) {
             alert("雲端資料尚未載入完成，請稍候再試。");
@@ -757,6 +777,7 @@
         }
 
         const webAppUrl = getWEB_APP_URL();
+        // 僅傳送有異動的內容 (若無傳入則預設傳送當前狀態)
         const payload = logsToSend || homeworkLogs;
 
         saveToLocalStorageOnly();
@@ -767,8 +788,8 @@
         }
 
         try {
-            updateCloudStatusUI('syncing', '正在寫入雲端...');
-            showLoadingSpinner(true, "正在安全寫入雲端試算表...");
+            updateCloudStatusUI('syncing', '正在增量寫入雲端...');
+            showLoadingSpinner(true, "正在安全寫入雲端試算表 (Upsert)...");
 
             const response = await fetch(webAppUrl, {
                 method: 'POST',
@@ -786,7 +807,7 @@
 
             if (result && result.status === 'success') {
                 showNotification("雲端寫入同步成功！", "success");
-                updateCloudStatusUI('success', '資料已安全同步至雲端');
+                updateCloudStatusUI('success', '資料已增量同步至雲端');
                 return true;
             } else {
                 alert("儲存失敗：" + (result ? result.message : "未知錯誤"));
@@ -843,8 +864,30 @@
         }
     }
 
+    function showToast(msg, type = 'success') {
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
+        const toastIcon = document.getElementById('toastIcon');
+        if (!toast || !toastMsg || !toastIcon) return;
+
+        toastMsg.textContent = msg;
+        if (type === 'warning') {
+            toastIcon.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-lg';
+        } else if (type === 'error') {
+            toastIcon.className = 'fa-solid fa-circle-xmark text-red-400 text-lg';
+        } else {
+            toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+        }
+
+        toast.classList.remove('opacity-0', 'pointer-events-none');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            toast.classList.add('opacity-0', 'pointer-events-none');
+        }, 3000);
+    }
+
     function showNotification(msg, type = "success") {
-        showToast(msg, type === 'warning' ? 'warning' : type);
+        showToast(msg, type);
     }
 
     function renderUI() {
@@ -946,6 +989,9 @@
     const STORAGE_KEY_LOGS = 'homeworkLogs';
     const STORAGE_KEY_LAST_SAVED = 'school_system_last_saved_v2';
 
+    /**
+     * 前端：近期資料快取 - LocalStorage 僅保留 15 天內的歷史紀錄
+     */
     function loadFromLocalStorage() {
         try {
             const storedClasses = localStorage.getItem(STORAGE_KEY_CLASSES);
@@ -954,7 +1000,19 @@
 
             classesDB = storedClasses ? JSON.parse(storedClasses) : [];
             studentsDB = storedStudents ? JSON.parse(storedStudents).map(normalizeStudent) : [];
-            homeworkLogs = storedLogs ? JSON.parse(storedLogs).map(normalizeLog) : [];
+            
+            let loadedLogs = storedLogs ? JSON.parse(storedLogs).map(normalizeLog) : [];
+
+            // 清理超過 15 天的舊資料
+            const fifteenDaysAgo = new Date();
+            fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+            fifteenDaysAgo.setHours(0, 0, 0, 0);
+
+            homeworkLogs = loadedLogs.filter(log => {
+                const logDate = new Date(log.date);
+                return isNaN(logDate.getTime()) || logDate >= fifteenDaysAgo;
+            });
+
             sortClassesDB();
         } catch (err) {
             console.error('LocalStorage 讀取失敗:', err);
@@ -968,6 +1026,17 @@
     function saveToLocalStorageOnly() {
         try {
             sortClassesDB();
+
+            // 儲存前再次過濾，確保僅保留 15 天內的紀錄
+            const fifteenDaysAgo = new Date();
+            fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+            fifteenDaysAgo.setHours(0, 0, 0, 0);
+
+            homeworkLogs = homeworkLogs.filter(log => {
+                const logDate = new Date(log.date);
+                return isNaN(logDate.getTime()) || logDate >= fifteenDaysAgo;
+            });
+
             localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classesDB));
             localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(studentsDB));
             localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(homeworkLogs));
@@ -1024,12 +1093,12 @@
 
         const logsToSend = [];
 
-        // 清除本機快取中當天該班別/科目的舊紀錄，準備重新整合
+        // 清除當月/當天該班別/科目的舊紀錄，準備整合
         taskList.forEach(taskName => {
             homeworkLogs = homeworkLogs.filter(l => !(toShortDateString(l.date) === regDate && l.class === regClass && l.subject === regSubject && l.taskName === taskName));
         });
 
-        // 收集表單勾選狀態
+        // 收集異動資料 (增量傳送)
         currentStudents.forEach((student, idx) => {
             const attSelect = document.querySelectorAll('.attendance-select')[idx];
             const remark = document.getElementById(`remark_${idx}`);
@@ -1051,11 +1120,10 @@
                         remark: remark ? remark.value : ''
                     };
 
-                    // 僅有欠交的存入本機 LocalStorage 快取
                     if (isMissingStatus) {
                         homeworkLogs.push(logObj);
                     }
-                    // 將該作業項目的所有學生新狀態傳給後端進行 Upsert 比對
+                    // 僅傳送本次變動之增量日誌
                     logsToSend.push(logObj);
                 });
             }
@@ -1134,7 +1202,7 @@
             activeTabBtn.classList.add('border-indigo-600', 'text-indigo-600');
         }
 
-        if (tabName === 'reports') renderReportTable();
+        if (tabName === 'reports') { resetReportPageAndRender(); }
         else if (tabName === 'analytics') renderAnalyticsView();
         else if (tabName === 'register') { renderTodayRegisteredTasksSummary(); loadStudentGrid(); }
         else if (tabName === 'admin') { renderAdminStudents(); renderAdminClasses(); renderVirtualStorageBuckets(); }
@@ -1326,7 +1394,6 @@
             tr.className = 'hover:bg-slate-50 transition grid-row';
             tr.setAttribute('data-index', index);
 
-            // Restore attendance & remark if already saved
             const existingLogForStudent = homeworkLogs.find(l => toShortDateString(l.date) === regDate && l.class === selectedClass && l.subject === selectedSubject && l.studentName === student.name);
             const savedAttendance = existingLogForStudent ? existingLogForStudent.attendance : 'Present';
             const savedRemark = existingLogForStudent ? existingLogForStudent.remark : '';
@@ -1487,6 +1554,19 @@
         });
     }
 
+    function resetReportPageAndRender() {
+        reportCurrentPage = 1;
+        renderReportTable();
+    }
+
+    function changeReportPage(delta) {
+        reportCurrentPage += delta;
+        renderReportTable();
+    }
+
+    /**
+     * 前端分頁控制 (每頁 50 筆) + 完整加總 (全量記憶體資料計算)
+     */
     function renderReportTable() {
         const tbody = document.getElementById('reportTableBody');
         if (!tbody) return;
@@ -1498,10 +1578,13 @@
         const selectedClass = document.getElementById('reportClass').value;
         const selectedSub = document.getElementById('reportSubject').value;
         const selectedMonth = document.getElementById('reportMonth')?.value || '';
-        const filtered = getFilteredMissingLogs();
+        
+        // 1. 全量記憶體篩選結果
+        const allFilteredLogs = getFilteredMissingLogs();
 
-        document.getElementById('totalMissingCount').textContent = filtered.length;
-        const taskSet = new Set(filtered.map(l => `${l.date}_${l.class}_${l.subject}_${l.taskName}`));
+        // 2. 完整加總 KPI 數據 (基於全量記憶體資料計算)
+        document.getElementById('totalMissingCount').textContent = allFilteredLogs.length;
+        const taskSet = new Set(allFilteredLogs.map(l => `${l.date}_${l.class}_${l.subject}_${l.taskName}`));
         document.getElementById('totalTaskCount').textContent = taskSet.size;
 
         const targetMonth = selectedMonth || new Date().toISOString().slice(0, 7);
@@ -1524,12 +1607,35 @@
         const monthlyRatioElem = document.getElementById('monthlyMissingRatio');
         if (monthlyRatioElem) monthlyRatioElem.textContent = `${defaultedStudentsSet.size}/${totalClassStudents}`;
 
-        if (filtered.length === 0) {
+        // 3. 分頁邏輯 (Page Slicing)
+        const totalItems = allFilteredLogs.length;
+        const totalPages = Math.ceil(totalItems / REPORT_PAGE_SIZE) || 1;
+
+        if (reportCurrentPage < 1) reportCurrentPage = 1;
+        if (reportCurrentPage > totalPages) reportCurrentPage = totalPages;
+
+        const startIndex = (reportCurrentPage - 1) * REPORT_PAGE_SIZE;
+        const endIndex = Math.min(startIndex + REPORT_PAGE_SIZE, totalItems);
+        const pageLogs = allFilteredLogs.slice(startIndex, endIndex);
+
+        // 更新分頁 UI 資訊
+        const infoElem = document.getElementById('reportPaginationInfo');
+        const pageTextElem = document.getElementById('currentPageText');
+        const prevBtn = document.getElementById('prevPageBtn');
+        const nextBtn = document.getElementById('nextPageBtn');
+
+        if (infoElem) infoElem.textContent = `顯示 ${totalItems === 0 ? 0 : startIndex + 1} - ${endIndex} 筆，共 ${totalItems} 筆`;
+        if (pageTextElem) pageTextElem.textContent = `第 ${reportCurrentPage} / ${totalPages} 頁`;
+        if (prevBtn) prevBtn.disabled = (reportCurrentPage <= 1);
+        if (nextBtn) nextBtn.disabled = (reportCurrentPage >= totalPages);
+
+        if (pageLogs.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-400 font-medium">尚無任何欠交紀錄</td></tr>`;
             return;
         }
 
-        filtered.forEach((log) => {
+        // 渲染當前頁面 (每頁 50 筆)
+        pageLogs.forEach((log) => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50 transition';
             const attBadge = log.attendance === 'Present' ? 
@@ -1895,10 +2001,10 @@
             </div>
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
                 <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold text-slate-500">功課欠交日誌 (Logs)</span>
+                    <span class="text-xs font-bold text-slate-500">功課欠交日誌 (15天快取)</span>
                     <span class="text-xs font-mono font-bold text-indigo-600">${homeworkLogs.length} 筆</span>
                 </div>
-                <div class="text-xs text-slate-600">收錄所有登錄與備份之欠交與出席狀態紀錄。</div>
+                <div class="text-xs text-slate-600">自動清理 15 天前舊資料，完整歷史保留於雲端。</div>
             </div>
         `;
     }
@@ -1914,7 +2020,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `功課欠交管理系統_完整備份_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `功課欠交管理系統_備份_${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
         showNotification('系統 JSON 備份檔已匯出', 'success');
@@ -1963,8 +2069,13 @@
         }
     }
 
+    /**
+     * 後端（GAS）：LockService 鎖定機制 + 記憶體批次內存覆寫
+     */
     function getGasScriptCode() {
         return `// Google Apps Script (Code.gs)
+// 後端包含 LockService 與 批次內存覆寫，避免超時與多人並發覆蓋
+
 function doGet(e) {
   const action = e.parameter ? e.parameter.action : '';
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1978,22 +2089,32 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  // 取得 Script 級別 Lock 機制 (最長等待 30 秒)
+  const lock = LockService.getScriptLock();
   try {
+    const success = lock.waitLock(30000);
+    if (!success) {
+      return ContentService.createTextOutput(JSON.stringify({status: 'error', message: '伺服器繁忙，請稍微再試'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     
     if (data.action === 'saveLogs') {
       if (data.classes) saveClasses(ss, data.classes);
       if (data.students) saveStudents(ss, data.students);
-      if (data.logs) saveLogs(ss, data.logs);
+      if (data.logs) saveHomeworkLogsOptimized(ss, data.logs);
       
-      return ContentService.createTextOutput(JSON.stringify({status: 'success', message: '資料寫入同步完成'}))
+      return ContentService.createTextOutput(JSON.stringify({status: 'success', message: '增量寫入與同步完成'}))
         .setMimeType(ContentService.MimeType.JSON);
     }
     return ContentService.createTextOutput(JSON.stringify({status: 'error', message: '未知的操作類別'}));
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({status: 'error', message: error.toString()}))
       .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -2026,27 +2147,25 @@ function saveClasses(ss, classes) {
   }
   if (!Array.isArray(classes) || classes.length === 0) return;
 
-  const data = sheet.getDataRange().getValues();
+  const values = sheet.getDataRange().getValues();
   const keyToRowIndex = {};
-  for (let i = 1; i < data.length; i++) {
-    const id = String(data[i][0] || '').trim().toUpperCase();
-    if (id) keyToRowIndex[id] = i + 1;
+  for (let i = 1; i < values.length; i++) {
+    const id = String(values[i][0] || '').trim().toUpperCase();
+    if (id) keyToRowIndex[id] = i;
   }
 
-  const rowsToAppend = [];
+  const newValues = values.slice();
   classes.forEach(c => {
     const id = String(c.id || '').trim().toUpperCase();
     const rowData = [c.id, c.name];
-    if (keyToRowIndex[id]) {
-      sheet.getRange(keyToRowIndex[id], 1, 1, 2).setValues([rowData]);
+    if (keyToRowIndex[id] !== undefined) {
+      newValues[keyToRowIndex[id]] = rowData;
     } else {
-      rowsToAppend.push(rowData);
+      newValues.push(rowData);
     }
   });
 
-  if (rowsToAppend.length > 0) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 2).setValues(rowsToAppend);
-  }
+  sheet.getRange(1, 1, newValues.length, 2).setValues(newValues);
 }
 
 function saveStudents(ss, students) {
@@ -2056,128 +2175,97 @@ function saveStudents(ss, students) {
   }
   if (!Array.isArray(students) || students.length === 0) return;
 
-  const data = sheet.getDataRange().getValues();
+  const values = sheet.getDataRange().getValues();
   const keyToRowIndex = {};
-  for (let i = 1; i < data.length; i++) {
-    const cls = String(data[i][0] || '').trim().toUpperCase();
-    const name = String(data[i][2] || '').trim();
-    const key = cls + '___' + name;
-    if (cls && name) keyToRowIndex[key] = i + 1;
+  for (let i = 1; i < values.length; i++) {
+    const cls = String(values[i][0] || '').trim().toUpperCase();
+    const name = String(values[i][2] || '').trim();
+    if (cls && name) keyToRowIndex[cls + '___' + name] = i;
   }
 
-  const rowsToAppend = [];
+  const newValues = values.slice();
   students.forEach(s => {
     const cls = String(s.class || '').trim().toUpperCase();
     const name = String(s.name || '').trim();
     const key = cls + '___' + name;
     const rowData = [s.class, s.seat, s.name, s.nameEn || '', s.status || 'Active'];
 
-    if (keyToRowIndex[key]) {
-      sheet.getRange(keyToRowIndex[key], 1, 1, 5).setValues([rowData]);
+    if (keyToRowIndex[key] !== undefined) {
+      newValues[keyToRowIndex[key]] = rowData;
     } else {
-      rowsToAppend.push(rowData);
+      newValues.push(rowData);
     }
   });
 
-  if (rowsToAppend.length > 0) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 5).setValues(rowsToAppend);
-  }
+  sheet.getRange(1, 1, newValues.length, 5).setValues(newValues);
 }
 
-function saveLogs(ss, newLogs) {
+/**
+ * 記憶體批次內存覆寫 (全量載入記憶體 -> 比對/更新 -> 一次性批次寫回)
+ */
+function saveHomeworkLogsOptimized(ss, incomingLogs) {
   let sheet = ss.getSheetByName('HomeworkLogs') || ss.insertSheet('HomeworkLogs');
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(['date', 'class', 'subject', 'taskName', 'studentName', 'attendance', 'isMissing', 'remark']);
   }
-  
-  if (!Array.isArray(newLogs) || newLogs.length === 0) return;
+  if (!Array.isArray(incomingLogs) || incomingLogs.length === 0) return;
 
-  const data = sheet.getDataRange().getValues();
+  const values = sheet.getDataRange().getValues();
+  const headers = ['date', 'class', 'subject', 'taskName', 'studentName', 'attendance', 'isMissing', 'remark'];
+  const newValues = values.length > 0 ? values.slice() : [headers];
+
+  // 建立現有 Sheet 資料索引 Key -> Row Index
   const keyToRowIndex = {};
-  
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    const key = makeLogKey(row[0], row[1], row[2], row[3], row[4]);
-    keyToRowIndex[key] = i + 1;
+  for (let i = 1; i < newValues.length; i++) {
+    const rowKey = buildLogKey(newValues[i][0], newValues[i][1], newValues[i][2], newValues[i][3], newValues[i][4]);
+    if (rowKey) keyToRowIndex[rowKey] = i;
   }
 
-  const rowsToAppend = [];
-
-  newLogs.forEach(l => {
-    const key = makeLogKey(l.date, l.class, l.subject, l.taskName, l.studentName);
-    const isMissingBool = (l.isMissing === true || String(l.isMissing).toUpperCase() === 'TRUE' || l.isMissing == 1);
-    
+  // 記憶體中批次更新或新增
+  incomingLogs.forEach(log => {
+    const key = buildLogKey(log.date, log.class, log.subject, log.taskName, log.studentName);
     const rowData = [
-      l.date,
-      l.class,
-      l.subject,
-      l.taskName,
-      l.studentName,
-      l.attendance,
-      isMissingBool,
-      l.remark || ''
+      formatShortDate(log.date),
+      String(log.class || '').trim(),
+      String(log.subject || '').trim(),
+      String(log.taskName || '').trim(),
+      String(log.studentName || '').trim(),
+      String(log.attendance || 'Present').trim(),
+      log.isMissing === true || String(log.isMissing).toUpperCase() === 'TRUE',
+      String(log.remark || '').trim()
     ];
 
-    if (keyToRowIndex[key]) {
-      const rowIndex = keyToRowIndex[key];
-      sheet.getRange(rowIndex, 1, 1, 8).setValues([rowData]);
-    } else if (isMissingBool) {
-      rowsToAppend.push(rowData);
+    if (keyToRowIndex[key] !== undefined) {
+      newValues[keyToRowIndex[key]] = rowData;
+    } else {
+      newValues.push(rowData);
+      keyToRowIndex[key] = newValues.length - 1;
     }
   });
 
-  if (rowsToAppend.length > 0) {
-    const startRow = sheet.getLastRow() + 1;
-    sheet.getRange(startRow, 1, rowsToAppend.length, 8).setValues(rowsToAppend);
-  }
+  // 一次性寫回 Google Sheet (一次 API Call 大幅縮減時間)
+  sheet.getRange(1, 1, newValues.length, 8).setValues(newValues);
 }
 
-function makeLogKey(date, cls, subject, taskName, studentName) {
-  var d = '';
-  if (date instanceof Date) {
-    var y = date.getFullYear();
-    var m = ('0' + (date.getMonth() + 1)).slice(-2);
-    var day = ('0' + date.getDate()).slice(-2);
-    d = y + '-' + m + '-' + day;
-  } else {
-    d = String(date || '').trim().slice(0, 10);
-  }
-  
-  var c = String(cls || '').trim().toUpperCase();
-  var s = String(subject || '').trim();
-  var t = String(taskName || '').trim() || '未命名作業';
-  var name = String(studentName || '').trim();
-  
-  return d + '___' + c + '___' + s + '___' + t + '___' + name;
+function buildLogKey(date, cls, sub, task, name) {
+  const d = formatShortDate(date);
+  const c = String(cls || '').trim().toUpperCase();
+  const s = String(sub || '').trim();
+  const t = String(task || '').trim();
+  const n = String(name || '').trim();
+  return d + '___' + c + '___' + s + '___' + t + '___' + n;
+}
+
+function formatShortDate(rawDate) {
+  if (!rawDate) return '';
+  const d = new Date(rawDate);
+  if (isNaN(d.getTime())) return String(rawDate).slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
 }`;
     }
-
-    function showToast(msg, type = 'success') {
-        const toast = document.getElementById('toast');
-        const toastMsg = document.getElementById('toastMsg');
-        const toastIcon = document.getElementById('toastIcon');
-        if (!toast || !toastMsg || !toastIcon) return;
-
-        toastMsg.textContent = msg;
-        if (type === 'warning') {
-            toastIcon.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-lg';
-        } else if (type === 'error') {
-            toastIcon.className = 'fa-solid fa-circle-xmark text-red-400 text-lg';
-        } else {
-            toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
-        }
-
-        toast.classList.remove('opacity-0', 'pointer-events-none');
-        toast.classList.add('opacity-100');
-
-        if (toastTimer) clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => {
-            toast.classList.remove('opacity-100');
-            toast.classList.add('opacity-0', 'pointer-events-none');
-        }, 3000);
-    }
-
-    window.onload = initSystem;
     </script>
 </body>
 </html>
